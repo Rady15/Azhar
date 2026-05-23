@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --direction: rtl;
+  }
+
+  [data-lang="EN"] {
+    --direction: ltr;
+  }
+
+  body {
+    font-family: 'Noto Sans Arabic', 'Tajawal', system-ui, sans-serif;
+    background-color: #f8fafc;
+    direction: var(--direction);
+  }
+
+  [data-lang="EN"] body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f1f5f9;
+  }
+
+  *::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 20px;
+  }
+}
+
+@layer components {
+  .card-shadow {
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+  }
+
+  .card-shadow-hover {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  }
+}
