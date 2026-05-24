@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, CreditCard, User, Home, Send, DollarSign, Calendar, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, X, User, Home, Send } from 'lucide-react'
 import { api } from '../services/api'
 
 interface Payment {
@@ -20,9 +20,8 @@ interface PaymentsProps {
 
 function Payments({ language }: PaymentsProps) {
   const [payments, setPayments] = useState<Payment[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
+  const [, setLoading] = useState(false)
+  const [, setError] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null)

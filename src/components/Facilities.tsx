@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, AlertCircle, Loader2, Check, X, Building2, Calendar, HelpCircle } from 'lucide-react'
+import { Plus, Trash2, Loader2, Check, X, Building2 } from 'lucide-react'
 import { api, FacilityModel } from '../services/api'
 
 interface FacilitiesProps {

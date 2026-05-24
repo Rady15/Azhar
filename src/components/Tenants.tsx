@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, Send, X, User, Phone, Mail, Home, Calendar, Loader2 } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, Send, X, User, Phone, Home, Calendar, Loader2 } from 'lucide-react'
 import { api } from '../services/api'
 
 interface Tenant {

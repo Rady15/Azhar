@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, AlertCircle, User, Home, Send, CheckCircle, XCircle, Loader2 } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, X, User, Home, Send, Loader2 } from 'lucide-react'
 import { api } from '../services/api'
 
 interface Complaint {

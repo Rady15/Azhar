@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, Home, MapPin, Maximize, Bed, Bath, Calendar, Upload, Loader2 } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, X, Home, MapPin, Maximize, Bed, Bath, Upload, Loader2 } from 'lucide-react'
 import { api } from '../services/api'
 
 interface Villa {

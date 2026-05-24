@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FileBarChart, Download, Users, Home, Wrench, CreditCard, TrendingUp, Loader2, AlertCircle, RefreshCcw } from 'lucide-react'
+import { Download, Users, Home, Wrench, CreditCard, TrendingUp, Loader2, AlertCircle, RefreshCcw } from 'lucide-react'
 import { api } from '../services/api'
 
 interface ReportsProps {

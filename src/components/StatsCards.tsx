@@ -9,7 +9,7 @@ function StatsCards() {
     activeMaintenance: 12,
     totalTenants: 85
   })
-  const [loading, setLoading] = useState(false)
+  const [, setLoading] = useState(false)
 
   useEffect(() => {
     async function fetchStats() {

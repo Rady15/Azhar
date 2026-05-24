@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Terminal, Send, Copy, Check, Settings, AlertCircle, ShieldCheck, Play, ArrowRight, BookOpen } from 'lucide-react'
+import { Copy, Check, Settings, Play, BookOpen } from 'lucide-react'
 import { api } from '../services/api'
 
 interface ApiEndpoint {

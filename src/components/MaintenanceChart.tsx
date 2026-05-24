@@ -7,7 +7,6 @@ const data = [
   { name: 'تكييف', value: 2, percentage: 20, color: '#f59e0b', icon: Wind },
 ]
 
-const RADIAN = Math.PI / 180
 
 function MaintenanceChart() {
   return (
