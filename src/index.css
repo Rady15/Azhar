@@ -12,13 +12,17 @@
   }
 
   body {
-    font-family: 'Noto Sans Arabic', 'Tajawal', system-ui, sans-serif;
+    font-family: 'Zain', system-ui, sans-serif;
     background-color: #f8fafc;
     direction: var(--direction);
   }
 
   [data-lang="EN"] body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Zain', system-ui, sans-serif;
+  }
+
+  * {
+    font-family: 'Zain', system-ui, sans-serif;
   }
 
   * {

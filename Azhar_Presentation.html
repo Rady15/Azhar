@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أزهار ريزدنس - العرض التقديمي للمشروع</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zain:wght@200;300;400;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Zain', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                            950: '#052e16',
+                        },
+                        gold: {
+                            400: '#facc15',
+                            500: '#eab308',
+                            600: '#ca8a04',
+                            700: '#a16207',
+                        },
+                        dark: '#0a0a0a',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #e2e8f0;
+            margin: 0;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 60px;
+        }
+
+        /* 16:9 Slide Dimensions */
+        .slide {
+            width: 1600px;
+            height: 900px;
+            background-color: white;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+            flex-shrink: 0;
+            page-break-after: always;
+        }
+
+        @media print {
+            body {
+                background-color: white;
+                padding: 0;
+                margin: 0;
+                gap: 0;
+                display: block;
+            }
+            @page {
+                size: 16in 9in;
+                margin: 0;
+            }
+            .slide {
+                box-shadow: none;
+                border-radius: 0;
+                width: 100vw;
+                height: 100vh;
+                page-break-after: always;
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Luxury Placeholders */
+        .img-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+            border: 1px dashed #cbd5e1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .img-placeholder::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.02) 10px, rgba(0,0,0,0.02) 20px);
+        }
+
+        .img-placeholder.dark-placeholder {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 1px dashed #334155;
+            color: #64748b;
+        }
+        .img-placeholder.dark-placeholder::after {
+            background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.02) 20px);
+        }
+
+        .gradient-text-gold {
+            background: linear-gradient(135deg, #eab308, #a16207);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .gradient-text-green {
+            background: linear-gradient(135deg, #16a34a, #14532d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .luxury-line {
+            width: 80px;
+            height: 2px;
+            background: #ca8a04;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased">
+
+    <!-- Slide 1: The Cover (Dark Luxury) -->
+    <div class="slide bg-primary-950 text-white flex">
+        <div class="absolute inset-0 z-0">
+            <div class="img-placeholder dark-placeholder" style="border:none;">
+                <span class="z-10 text-3xl font-light tracking-widest uppercase">صورة (خلفية المنتجع الفاخرة)</span>
+            </div>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-l from-primary-950/95 via-primary-950/80 to-transparent z-0"></div>
+        
+        <div class="z-10 w-1/2 p-32 flex flex-col justify-center h-full border-r border-white/10 backdrop-blur-sm">
+            <div class="w-32 h-32 border border-gold-500/30 flex items-center justify-center mb-12 relative">
+                <!-- Logo Space -->
+                <div class="absolute inset-2 border border-gold-500/10"></div>
+                <span class="text-gold-500 font-bold text-2xl tracking-widest">لوجو</span>
+            </div>
+            <p class="text-gold-500 tracking-[0.3em] uppercase text-sm mb-4">Product Showcase Presentation</p>
+            <h1 class="text-8xl font-black mb-6 leading-tight">أزهار<br><span class="font-light text-slate-300">ريزدنس</span></h1>
+            <div class="luxury-line"></div>
+            <p class="text-3xl text-slate-400 font-light tracking-wide leading-relaxed mt-6">
+                البوابة الرقمية لإدارة<br>المنتجعات السكنية الفاخرة.
+            </p>
+        </div>
+    </div>
+
+    <!-- Slide 2: The Vision & Problem -->
+    <div class="slide bg-white flex overflow-hidden">
+        <div class="w-1/2 p-32 flex flex-col justify-center relative">
+            <div class="absolute top-0 right-0 w-full h-full bg-slate-50 -z-10 transform skew-x-12 translate-x-32"></div>
+            
+            <h2 class="text-gold-600 font-bold text-2xl tracking-widest mb-6">01. THE VISION</h2>
+            <h3 class="text-6xl font-black text-slate-900 mb-10 leading-tight">الارتقاء بتجربة السكن <br>نحو الرقمنة الكاملة</h3>
+            
+            <div class="space-y-12 mt-8">
+                <div>
+                    <h4 class="text-2xl font-bold text-primary-900 mb-4 flex items-center gap-4">
+                        <span class="w-12 h-px bg-primary-900"></span>
+                        التحدي (The Challenge)
+                    </h4>
+                    <p class="text-xl text-slate-500 leading-relaxed pl-16">
+                        تعاني المنتجعات الفاخرة من بطء التواصل بين الإدارة والسكان، تشتت في تحصيل المدفوعات، وصعوبة في متابعة طلبات الصيانة بشكل ورقي أو عشوائي.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-2xl font-bold text-primary-900 mb-4 flex items-center gap-4">
+                        <span class="w-12 h-px bg-primary-900"></span>
+                        الحل (The Solution)
+                    </h4>
+                    <p class="text-xl text-slate-500 leading-relaxed pl-16">
+                        نظام "أزهار" هو بيئة رقمية متكاملة تتكون من لوحة تحكم مركزية للإدارة، وتطبيق موبايل متطور للسكان، لربط كل زوايا المنتجع في منصة واحدة ذكية.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="w-1/2 p-16">
+            <div class="img-placeholder rounded-tl-[100px] rounded-br-[100px]">
+                <span class="z-10 text-2xl font-light">صورة (أسلوب حياة فاخر / مباني المنتجع)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 3: Value for Management -->
+    <div class="slide bg-slate-900 text-white flex flex-col justify-center items-center p-32 relative">
+        <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 40px 40px;"></div>
+        
+        <div class="text-center z-10 mb-20">
+            <h2 class="text-gold-500 font-bold text-2xl tracking-widest mb-4">02. VALUE PROPOSITION</h2>
+            <h3 class="text-6xl font-black">ماذا يقدم النظام لإدارة المنتجع؟</h3>
+        </div>
+
+        <div class="grid grid-cols-3 gap-12 z-10 w-full">
+            <div class="border border-slate-700 bg-slate-800/50 p-12 hover:border-gold-500/50 transition-colors">
+                <div class="text-gold-500 text-5xl mb-8">01</div>
+                <h4 class="text-3xl font-bold mb-4">التحكم المالي الكامل</h4>
+                <p class="text-slate-400 text-xl leading-relaxed">تتبع دقيق للإيجارات، المدفوعات المتأخرة، والمصاريف التشغيلية. كل تقاريرك المالية تولد بضغطة زر واحدة.</p>
+            </div>
+            <div class="border border-slate-700 bg-slate-800/50 p-12 hover:border-gold-500/50 transition-colors mt-12">
+                <div class="text-gold-500 text-5xl mb-8">02</div>
+                <h4 class="text-3xl font-bold mb-4">كفاءة التشغيل</h4>
+                <p class="text-slate-400 text-xl leading-relaxed">أتمتة طلبات الصيانة، توزيع المهام على الفنيين، ومتابعة حالة العمل بشكل لحظي لضمان أعلى جودة للمرافق.</p>
+            </div>
+            <div class="border border-slate-700 bg-slate-800/50 p-12 hover:border-gold-500/50 transition-colors">
+                <div class="text-gold-500 text-5xl mb-8">03</div>
+                <h4 class="text-3xl font-bold mb-4">رضا السكان (Tenants)</h4>
+                <p class="text-slate-400 text-xl leading-relaxed">تقديم تجربة سكن راقية من خلال تطبيق يتيح لهم إنهاء كافة طلباتهم وحجوزاتهم دون عناء النزول للإدارة.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 4: System Architecture -->
+    <div class="slide bg-white p-32 flex flex-col">
+        <h2 class="text-primary-900 font-bold text-2xl tracking-widest mb-4">03. ECOSYSTEM</h2>
+        <h3 class="text-6xl font-black text-slate-900 mb-20">نظام بيئي متصل بالكامل</h3>
+
+        <div class="flex-1 flex items-center justify-between relative">
+            <div class="absolute top-1/2 left-0 w-full h-px bg-slate-200 -z-10"></div>
+            
+            <!-- Admin Side -->
+            <div class="w-1/3 bg-white border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-12 relative">
+                <div class="absolute -top-6 left-12 bg-primary-900 text-white px-6 py-2 text-sm font-bold tracking-widest">WEB DASHBOARD</div>
+                <h4 class="text-3xl font-bold mb-6 mt-4 text-primary-900">لوحة الإدارة</h4>
+                <ul class="space-y-4 text-xl text-slate-600">
+                    <li class="flex items-center gap-3"><span class="w-2 h-2 bg-gold-500 rounded-full"></span> إدارة الفلل والمستأجرين</li>
+                    <li class="flex items-center gap-3"><span class="w-2 h-2 bg-gold-500 rounded-full"></span> تعيين مهام الصيانة</li>
+                    <li class="flex items-center gap-3"><span class="w-2 h-2 bg-gold-500 rounded-full"></span> مراجعة المدفوعات والتقارير</li>
+                    <li class="flex items-center gap-3"><span class="w-2 h-2 bg-gold-500 rounded-full"></span> نشر الإعلانات الرسمية</li>
+                </ul>
+            </div>
+
+            <!-- Core API -->
+            <div class="w-64 h-64 rounded-full border-2 border-dashed border-primary-300 flex items-center justify-center bg-primary-50 relative">
+                <div class="text-center">
+                    <div class="text-primary-600 font-black text-2xl mb-2">REST API</div>
+                    <p class="text-slate-500">الخادم المركزي</p>
+                </div>
+            </div>
+
+            <!-- Tenant Side -->
+            <div class="w-1/3 bg-white border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-12 relative">
+                <div class="absolute -top-6 right-12 bg-slate-900 text-white px-6 py-2 text-sm font-bold tracking-widest">MOBILE APP (FLUTTER)</div>
+                <h4 class="text-3xl font-bold mb-6 mt-4 text-slate-900">تطبيق السكان</h4>
+                <ul class="space-y-4 text-xl text-slate-600">
+                    <li class="flex items-center gap-3"><span class="w-2 h-2 bg-gold-500 rounded-full"></span> رفع طلبات الصيانة بالصور</li>
+                    <li class="flex items-center gap-3"><span class="w-2 h-2 bg-gold-500 rounded-full"></span> حجز المرافق (مسبح، جيم)</li>
+                    <li class="flex items-center gap-3"><span class="w-2 h-2 bg-gold-500 rounded-full"></span> استلام الإشعارات ودفع الإيجار</li>
+                    <li class="flex items-center gap-3"><span class="w-2 h-2 bg-gold-500 rounded-full"></span> تقديم الشكاوى والاقتراحات</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 5: Mobile App Intro -->
+    <div class="slide bg-slate-50 flex">
+        <div class="w-1/2 p-32 flex flex-col justify-center">
+            <p class="text-slate-400 font-bold tracking-[0.2em] mb-4">PART 01</p>
+            <h2 class="text-7xl font-black text-slate-900 mb-8">التجربة <br>السكنية الذكية</h2>
+            <div class="luxury-line"></div>
+            <p class="text-2xl text-slate-500 leading-relaxed mb-12">
+                نستعرض في الصفحات القادمة كيف سيتفاعل المستأجر (الساكن) مع المنتجع من خلال تطبيق الموبايل الخاص به، ليكون كل شيء متاحاً بين يديه.
+            </p>
+            <div class="flex gap-4">
+                <span class="px-6 py-3 border border-slate-300 text-slate-500 text-lg">iOS / Apple</span>
+                <span class="px-6 py-3 border border-slate-300 text-slate-500 text-lg">Android</span>
+            </div>
+        </div>
+        <div class="w-1/2 p-20 bg-slate-200">
+            <div class="img-placeholder">
+                <span class="z-10 text-2xl font-light">صورة (عرض عام لتطبيق الموبايل)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 6: Mobile Screens - Daily Life -->
+    <div class="slide bg-white flex flex-col p-32">
+        <div class="flex justify-between items-end mb-16 border-b border-slate-100 pb-8">
+            <div>
+                <h2 class="text-primary-900 font-bold text-2xl tracking-widest mb-4">TENANT APP</h2>
+                <h3 class="text-5xl font-black text-slate-900">شاشات الحياة اليومية</h3>
+            </div>
+            <p class="text-xl text-slate-500 max-w-xl text-left" dir="ltr">
+                Home, Announcements & Profile
+            </p>
+        </div>
+
+        <div class="flex-1 flex gap-12">
+            <div class="w-1/3 flex flex-col h-full">
+                <div class="h-3/4 mb-8">
+                    <div class="img-placeholder" style="border-radius: 40px;">صورة (شاشة الرئيسية)</div>
+                </div>
+                <h4 class="text-2xl font-bold mb-2">الشاشة الرئيسية</h4>
+                <p class="text-slate-500 text-lg">نظرة عامة على الإعلانات، وحالة أحدث الطلبات، مع اختصارات سريعة للخدمات.</p>
+            </div>
+            
+            <div class="w-1/3 flex flex-col h-full">
+                <div class="h-3/4 mb-8">
+                    <div class="img-placeholder" style="border-radius: 40px;">صورة (شاشة الإعلانات)</div>
+                </div>
+                <h4 class="text-2xl font-bold mb-2">الإعلانات الرسمية</h4>
+                <p class="text-slate-500 text-lg">متابعة إشعارات الإدارة (مثل مواعيد الصيانة الدورية أو فعاليات المنتجع).</p>
+            </div>
+
+            <div class="w-1/3 flex flex-col h-full">
+                <div class="h-3/4 mb-8">
+                    <div class="img-placeholder" style="border-radius: 40px;">صورة (شاشة الملف الشخصي)</div>
+                </div>
+                <h4 class="text-2xl font-bold mb-2">الملف الشخصي للساكن</h4>
+                <p class="text-slate-500 text-lg">عرض بيانات المستأجر، وتاريخ تعاقده، وتفاصيل الفيلا/الوحدة الخاصة به.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 7: Mobile Screens - Services -->
+    <div class="slide bg-slate-900 text-white flex flex-col p-32">
+        <div class="flex justify-between items-end mb-16 border-b border-slate-800 pb-8">
+            <div>
+                <h2 class="text-gold-500 font-bold text-2xl tracking-widest mb-4">TENANT APP</h2>
+                <h3 class="text-5xl font-black">الخدمات والمرافق</h3>
+            </div>
+            <p class="text-xl text-slate-400 max-w-xl text-left" dir="ltr">
+                Maintenance & Facility Bookings
+            </p>
+        </div>
+
+        <div class="flex-1 flex gap-12">
+            <div class="w-1/3 flex flex-col h-full">
+                <div class="h-3/4 mb-8">
+                    <div class="img-placeholder dark-placeholder" style="border-radius: 40px;">صورة (طلب صيانة)</div>
+                </div>
+                <h4 class="text-2xl font-bold mb-2 text-gold-400">رفع طلب صيانة</h4>
+                <p class="text-slate-400 text-lg">إمكانية تحديد نوع العطل (كهرباء، سباكة) وإرفاق صورة للمشكلة مباشرة من الكاميرا.</p>
+            </div>
+            
+            <div class="w-1/3 flex flex-col h-full">
+                <div class="h-3/4 mb-8">
+                    <div class="img-placeholder dark-placeholder" style="border-radius: 40px;">صورة (حالة الطلب)</div>
+                </div>
+                <h4 class="text-2xl font-bold mb-2 text-gold-400">تتبع حالة الصيانة</h4>
+                <p class="text-slate-400 text-lg">تتبع مباشر للطلب: (قيد المراجعة > تم تعيين فني > قيد العمل > مكتمل).</p>
+            </div>
+
+            <div class="w-1/3 flex flex-col h-full">
+                <div class="h-3/4 mb-8">
+                    <div class="img-placeholder dark-placeholder" style="border-radius: 40px;">صورة (حجز المرافق)</div>
+                </div>
+                <h4 class="text-2xl font-bold mb-2 text-gold-400">حجز مرافق المنتجع</h4>
+                <p class="text-slate-400 text-lg">اختيار المرفق (ملعب تنس، قاعة مناسبات)، تحديد التاريخ والوقت، وتأكيد الحجز للحفاظ على التنظيم.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 8: Mobile Screens - Financials -->
+    <div class="slide bg-white flex flex-col p-32">
+        <div class="flex justify-between items-end mb-16 border-b border-slate-100 pb-8">
+            <div>
+                <h2 class="text-primary-900 font-bold text-2xl tracking-widest mb-4">TENANT APP</h2>
+                <h3 class="text-5xl font-black text-slate-900">المدفوعات والإيجارات</h3>
+            </div>
+            <p class="text-xl text-slate-500 max-w-xl text-left" dir="ltr">
+                Payments & Financial History
+            </p>
+        </div>
+
+        <div class="flex-1 flex gap-16 items-center">
+            <div class="w-1/2 flex gap-8 h-full">
+                <div class="w-1/2 h-[600px]">
+                    <div class="img-placeholder" style="border-radius: 40px;">صورة (شاشة الدفع)</div>
+                </div>
+                <div class="w-1/2 h-[600px] mt-12">
+                    <div class="img-placeholder" style="border-radius: 40px;">صورة (سجل المدفوعات)</div>
+                </div>
+            </div>
+            
+            <div class="w-1/2 space-y-12 pl-12">
+                <div>
+                    <h4 class="text-3xl font-bold mb-4 text-slate-900">دفع الإيجار الشهري بسهولة</h4>
+                    <p class="text-xl text-slate-500 leading-relaxed">
+                        يصل إشعار للمستأجر بموعد الاستحقاق. يمكنه عرض تفاصيل الفاتورة، ورفع إيصال التحويل البنكي مباشرة عبر التطبيق لتتم مراجعته من الإدارة.
+                    </p>
+                </div>
+                <div class="luxury-line"></div>
+                <div>
+                    <h4 class="text-3xl font-bold mb-4 text-slate-900">سجل مالي شفاف</h4>
+                    <p class="text-xl text-slate-500 leading-relaxed">
+                        يحتفظ التطبيق بأرشيف كامل لكل المدفوعات السابقة، مما يمنع أي التباس بين الساكن وإدارة المنتجع حول الدفعات المسددة أو المتأخرة.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 9: Admin Dashboard Intro -->
+    <div class="slide bg-primary-950 text-white flex">
+        <div class="w-1/2 p-20 bg-slate-900 border-l border-white/10">
+            <div class="img-placeholder dark-placeholder">
+                <span class="z-10 text-2xl font-light text-center">صورة (عرض عام للابتوب يوضح الداشبورد)</span>
+            </div>
+        </div>
+        <div class="w-1/2 p-32 flex flex-col justify-center">
+            <p class="text-gold-500 font-bold tracking-[0.2em] mb-4">PART 02</p>
+            <h2 class="text-7xl font-black mb-8">مركز القيادة <br>والتحكم الإداري</h2>
+            <div class="luxury-line"></div>
+            <p class="text-2xl text-slate-400 leading-relaxed mb-12">
+                لوحة تحكم (Web Dashboard) مصممة خصيصاً لموظفي إدارة المنتجع. واجهة نظيفة وقوية تمنحك سيطرة كاملة على العمليات اليومية.
+            </p>
+            <div class="flex gap-4">
+                <span class="px-6 py-3 border border-white/20 text-white text-lg">Web Application</span>
+                <span class="px-6 py-3 border border-white/20 text-white text-lg">React.js</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 10: Admin Screens - Management -->
+    <div class="slide bg-slate-50 flex flex-col p-32">
+        <div class="flex justify-between items-end mb-16 border-b border-slate-200 pb-8">
+            <div>
+                <h2 class="text-primary-900 font-bold text-2xl tracking-widest mb-4">WEB DASHBOARD</h2>
+                <h3 class="text-5xl font-black text-slate-900">إدارة الأصول والسكان</h3>
+            </div>
+            <p class="text-xl text-slate-500 max-w-xl text-left" dir="ltr">
+                Properties & Tenants Management
+            </p>
+        </div>
+
+        <div class="flex-1 flex flex-col gap-12">
+            <!-- Screen Row 1 -->
+            <div class="flex h-1/2 gap-12 items-center">
+                <div class="w-1/2 h-full">
+                    <div class="img-placeholder" style="border-radius: 16px;">صورة (شاشة إدارة الفلل/الوحدات)</div>
+                </div>
+                <div class="w-1/2">
+                    <h4 class="text-3xl font-bold mb-4 text-primary-900">إدارة الفلل والوحدات (Villas)</h4>
+                    <p class="text-xl text-slate-600 leading-relaxed">
+                        إضافة وحدات جديدة، تعديل تفاصيلها (المساحة، الغرف، السعر)، ومعرفة حالة كل وحدة بوضوح (مؤجرة / متاحة).
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Screen Row 2 -->
+            <div class="flex h-1/2 gap-12 items-center flex-row-reverse">
+                <div class="w-1/2 h-full">
+                    <div class="img-placeholder" style="border-radius: 16px;">صورة (شاشة إدارة المستأجرين)</div>
+                </div>
+                <div class="w-1/2">
+                    <h4 class="text-3xl font-bold mb-4 text-primary-900">إدارة المستأجرين (Tenants)</h4>
+                    <p class="text-xl text-slate-600 leading-relaxed">
+                        تسجيل بيانات الملاك أو المستأجرين الجدد، ربطهم بالوحدات الخاصة بهم، وتوليد حسابات الدخول الخاصة بتطبيق الموبايل تلقائياً.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 11: Admin Screens - Analytics -->
+    <div class="slide bg-white flex flex-col p-32">
+        <div class="flex justify-between items-end mb-16 border-b border-slate-100 pb-8">
+            <div>
+                <h2 class="text-primary-900 font-bold text-2xl tracking-widest mb-4">WEB DASHBOARD</h2>
+                <h3 class="text-5xl font-black text-slate-900">التحليل والمتابعة المالية</h3>
+            </div>
+            <p class="text-xl text-slate-500 max-w-xl text-left" dir="ltr">
+                Analytics & Financial Operations
+            </p>
+        </div>
+
+        <div class="flex-1 flex gap-12">
+            <div class="w-2/3 h-full">
+                <div class="img-placeholder" style="border-radius: 16px;">صورة (شاشة الداشبورد الرئيسية للإحصائيات أو التقارير المالية)</div>
+            </div>
+            
+            <div class="w-1/3 flex flex-col justify-center gap-6">
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <h4 class="text-2xl font-bold mb-3 text-slate-900">التقارير المالية (Financials)</h4>
+                    <p class="text-slate-600 text-lg">
+                        رؤية شاملة للإيرادات المحصلة، مع إمكانية مراجعة إيصالات الدفع التي يرفعها السكان واعتمادها رسمياً من النظام.
+                    </p>
+                </div>
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <h4 class="text-2xl font-bold mb-3 text-slate-900">لوحة التحكم (Overview)</h4>
+                    <p class="text-slate-600 text-lg">
+                        رسوم بيانية (Charts) توضح معدلات إشغال المنتجع، كثافة طلبات الصيانة، والموقف المالي العام في لمحة سريعة.
+                    </p>
+                </div>
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <h4 class="text-2xl font-bold mb-3 text-slate-900">إدارة الشكاوى</h4>
+                    <p class="text-slate-600 text-lg">
+                        متابعة الشكاوى الواردة من التطبيق والرد عليها لحلها بأسرع وقت لضمان جودة خدمة تليق بالمكان.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 12: Closing Page -->
+    <div class="slide flex flex-col justify-center items-center relative bg-dark text-white">
+        <!-- Placeholder Background -->
+        <div class="absolute inset-0 z-0">
+            <div class="img-placeholder dark-placeholder" style="border: none;">
+                <span class="z-10 text-3xl font-light tracking-widest uppercase">صورة (خلفية الختام الفخمة)</span>
+            </div>
+        </div>
+
+        <div class="absolute inset-0 bg-dark/90 z-0"></div>
+        
+        <div class="z-10 text-center flex flex-col items-center">
+            <h1 class="text-7xl font-black mb-8 tracking-tight gradient-text-gold">التميز في الإدارة العقارية</h1>
+            <p class="text-3xl text-slate-300 font-light tracking-wide mb-16 max-w-3xl leading-relaxed">
+                نحن جاهزون لبدء تحويل "أزهار ريزدنس" إلى أول مجتمع سكني ذكي ومتكامل بالكامل في المنطقة.
+            </p>
+            
+            <div class="flex gap-8 mt-8">
+                <div class="bg-white/5 border border-white/10 backdrop-blur-md px-10 py-5 rounded-2xl flex items-center gap-4 hover:bg-white/10 transition-colors">
+                    <svg class="w-6 h-6 text-gold-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                    <span class="text-xl font-bold text-white font-sans tracking-wide" dir="ltr">contact@azhar.com</span>
+                </div>
+                <div class="bg-white/5 border border-white/10 backdrop-blur-md px-10 py-5 rounded-2xl flex items-center gap-4 hover:bg-white/10 transition-colors">
+                    <svg class="w-6 h-6 text-gold-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                    <span class="text-xl font-bold text-white font-sans tracking-wide" dir="ltr">azhar-residence.com</span>
+                </div>
+            </div>
+            
+            <p class="text-slate-600 text-sm mt-24 uppercase tracking-[0.3em]">Confidential & Proprietary © 2026</p>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -33,7 +33,8 @@ export default {
         },
       },
       fontFamily: {
-        arabic: ['"Noto Sans Arabic"', '"Tajawal"', 'system-ui', 'sans-serif'],
+        sans:    ['Zain', 'system-ui', 'sans-serif'],
+        arabic:  ['Zain', 'system-ui', 'sans-serif'],
       },
     },
   },

@@ -308,7 +308,7 @@ export default function ApiDocs({ language }: ApiDocsProps) {
   return (
     <div className="space-y-6">
       {/* Title Header */}
-      <div className="bg-slate-900 text-white rounded-3xl p-8 relative overflow-hidden shadow-2xl">
+      {/* <div className="bg-slate-900 text-white rounded-3xl p-8 relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary-600/20 rounded-full blur-3xl -mr-20 -mt-20"></div>
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl -ml-20 -mb-20"></div>
         
@@ -329,10 +329,10 @@ export default function ApiDocs({ language }: ApiDocsProps) {
             : 'Welcome to the interactive developer suite. Explore all 28 REST API endpoints, trigger real live test runs against the production server, and copy complete cURL commands.'
           }
         </p>
-      </div>
+      </div> */}
 
       {/* Recommended Adjustments to Backend Developer */}
-      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
+      {/* <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
           <div>
@@ -356,7 +356,7 @@ export default function ApiDocs({ language }: ApiDocsProps) {
             </ul>
           </div>
         </div>
-      </div>
+      </div> */}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Endpoints List */}
@@ -377,11 +377,10 @@ export default function ApiDocs({ language }: ApiDocsProps) {
                 className={`w-full text-right p-4 transition-all hover:bg-slate-50 flex flex-col gap-1.5 ${selectedEndpoint === idx ? 'bg-primary-50/50 border-r-4 border-primary-600' : ''}`}
               >
                 <div className="flex justify-between items-center w-full">
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
-                    ep.method === 'GET' ? 'bg-blue-100 text-blue-700' :
-                    ep.method === 'POST' ? 'bg-green-100 text-green-700' :
-                    ep.method === 'PUT' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                  }`}>
+                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${ep.method === 'GET' ? 'bg-blue-100 text-blue-700' :
+                      ep.method === 'POST' ? 'bg-green-100 text-green-700' :
+                        ep.method === 'PUT' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                    }`}>
                     {ep.method}
                   </span>
                   <code className="text-xs font-mono text-slate-700 text-left truncate max-w-[200px]" dir="ltr">{ep.path}</code>
@@ -401,7 +400,7 @@ export default function ApiDocs({ language }: ApiDocsProps) {
               <h3 className="font-bold text-slate-800 text-base">{language === 'AR' ? 'لوحة الاختبار التفاعلية' : 'Interactive Sandbox Playground'}</h3>
               <p className="text-xs text-slate-500">{language === 'AR' ? 'اختبر الاستدعاءات الحية مباشرة على الخادم' : 'Execute live requests with custom data'}</p>
             </div>
-            
+
             <button
               onClick={handleRunTest}
               disabled={loading}
@@ -502,16 +501,15 @@ export default function ApiDocs({ language }: ApiDocsProps) {
                 {language === 'AR' ? 'الاستجابة الفعلية من الخادم (Response Payload)' : 'Server Response Payload'}
               </label>
               {responseOutput ? (
-                <pre className={`p-4 rounded-xl text-xs font-mono overflow-x-auto h-48 border max-h-48 overflow-y-auto ${
-                  responseOutput.startsWith('Error') 
-                    ? 'bg-red-50 text-red-700 border-red-200' 
+                <pre className={`p-4 rounded-xl text-xs font-mono overflow-x-auto h-48 border max-h-48 overflow-y-auto ${responseOutput.startsWith('Error')
+                    ? 'bg-red-50 text-red-700 border-red-200'
                     : 'bg-emerald-950 text-emerald-400 border-emerald-900'
-                }`} dir="ltr">
+                  }`} dir="ltr">
                   {responseOutput}
                 </pre>
               ) : (
                 <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center text-slate-400 text-xs">
-                  {language === 'AR' 
+                  {language === 'AR'
                     ? 'اضغط على زر "استدعاء الآن" بالأعلى لبدء الفحص وجلب الاستجابة الحية من خادم ASP.NET.'
                     : 'Click "Run Query" above to execute and retrieve live responses from the ASP.NET production server.'
                   }
