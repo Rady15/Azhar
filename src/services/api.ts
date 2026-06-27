@@ -48,6 +48,12 @@ async function request<T>(method: string, path: string, body?: any): Promise<T> 
     try {
       const parsedError = JSON.parse(errorText);
       errorMessage = parsedError.message || parsedError.title || errorMessage;
+      if (parsedError.errors) {
+        const details = Object.entries(parsedError.errors)
+          .map(([field, msgs]) => `${field}: ${(msgs as string[]).join(', ')}`)
+          .join('; ');
+        if (details) errorMessage += ` (${details})`;
+      }
     } catch {
       if (errorText) errorMessage = errorText;
     }
@@ -55,7 +61,72 @@ async function request<T>(method: string, path: string, body?: any): Promise<T> 
   }
 
   const text = await response.text();
-  return text ? JSON.parse(text) : ({} as T);
+  if (text) {
+    try { return JSON.parse(text); } catch { return text as unknown as T; }
+  }
+  return {} as T;
+}
+
+// Form-data request helper for endpoints that require multipart (e.g. House endpoints)
+async function formDataRequest<T>(method: string, path: string, data: Record<string, any>): Promise<T> {
+  const token = localStorage.getItem('azhar_token');
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const formData = new FormData();
+  for (const key in data) {
+    if (data[key] !== undefined && data[key] !== null) {
+      if (key === 'images' && Array.isArray(data[key])) {
+        data[key].forEach((img: any) => {
+          if (img instanceof File) {
+            formData.append(key, img, img.name);
+          } else {
+            formData.append(key, String(img));
+          }
+        });
+      } else if (data[key] instanceof File) {
+        formData.append(key, data[key], data[key].name);
+      } else if (typeof data[key] === 'boolean') {
+        formData.append(key, data[key] ? 'true' : 'false');
+      } else {
+        formData.append(key, String(data[key]));
+      }
+    }
+  }
+
+  const options: RequestInit = {
+    method: method.toUpperCase(),
+    headers,
+    body: formData,
+  };
+
+  const response = await fetch(`${API_BASE_URL}${path}`, options);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    let errorMessage = `HTTP Error ${response.status}`;
+    try {
+      const parsedError = JSON.parse(errorText);
+      errorMessage = parsedError.message || parsedError.title || errorMessage;
+      if (parsedError.errors) {
+        const details = Object.entries(parsedError.errors)
+          .map(([field, msgs]) => `${field}: ${(msgs as string[]).join(', ')}`)
+          .join('; ');
+        if (details) errorMessage += ` (${details})`;
+      }
+    } catch {
+      if (errorText) errorMessage = errorText;
+    }
+    throw new Error(errorMessage);
+  }
+
+  const text = await response.text();
+  if (text) {
+    try { return JSON.parse(text); } catch { return text as unknown as T; }
+  }
+  return {} as T;
 }
 
 // Interfaces matching the C# backend models
@@ -109,6 +180,37 @@ export interface FacilityModel {
   description: string;
   maxCapacity: number;
   isAvailable: boolean;
+  image?: string;
+}
+
+export interface BookingRequest {
+  facilityId: string;
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
+  guestsCount: number;
+}
+
+export interface HouseModel {
+  id?: string;
+  contractNumber: string;
+  contractStartDate?: string;
+  contractEndDate: string;
+  houseNumber: string;
+  buildingNumber: string;
+  floorNumber: number;
+  area?: number;
+  roomsCount?: number;
+  bathroomsCount?: number;
+  hasGarage?: boolean;
+  hasGarden?: boolean;
+  notes?: string;
+  images?: string[];
+  imageUrls?: string[];
+  userId?: string;
+  userDisplayName?: string;
+  userEmail?: string;
+  createdAt?: string;
 }
 
 // Export API service functions
@@ -186,11 +288,23 @@ export const api = {
   },
 
   async createFacility(facility: FacilityModel): Promise<FacilityModel> {
-    return request<FacilityModel>('POST', '/api/Facilities', facility);
+    return formDataRequest<FacilityModel>('POST', '/api/Facilities', facility as unknown as Record<string, any>);
   },
 
   async deleteFacility(id: string, emailData: { email: string }): Promise<any> {
-    return request<any>('DELETE', `/api/Facilities/${id}`, emailData);
+    return formDataRequest<any>('DELETE', `/api/Facilities/${id}`, emailData);
+  },
+
+  async getMyBookings(): Promise<BookingModel[]> {
+    return request<BookingModel[]>('GET', '/api/Facilities/my-bookings');
+  },
+
+  async createBooking(data: BookingRequest): Promise<any> {
+    return request<any>('POST', '/api/Facilities/book', data);
+  },
+
+  async cancelBooking(id: string): Promise<any> {
+    return request<any>('PUT', `/api/Facilities/bookings/${id}/cancel`);
   },
 
   // Dashboard API
@@ -203,11 +317,18 @@ export const api = {
     return request<any[]>('GET', '/api/Announcements');
   },
 
-  async createAnnouncement(announcement: { title: string; description: string; type: string }): Promise<any> {
-    return request<any>('POST', '/api/Announcements', announcement);
+  async createAnnouncement(announcement: Record<string, any>): Promise<any> {
+    return formDataRequest<any>('POST', '/api/Announcements', announcement);
   },
 
-  async deleteAnnouncement(id: string): Promise<any> {
+  async updateAnnouncement(id: string, announcement: Record<string, any>): Promise<any> {
+    return formDataRequest<any>('PATCH', `/api/Announcements/${id}`, announcement);
+  },
+
+  async deleteAnnouncement(id: string, data?: Record<string, any>): Promise<any> {
+    if (data) {
+      return formDataRequest<any>('DELETE', `/api/Announcements/${id}`, data);
+    }
     return request<any>('DELETE', `/api/Announcements/${id}`);
   },
 
@@ -220,21 +341,29 @@ export const api = {
     return request<any>('PUT', `/api/Complaints/${id}/reply`, replyData);
   },
 
-  // Villas API
-  async getVillas(): Promise<any[]> {
-    return request<any[]>('GET', '/api/Villas');
+  async createComplaint(data: Record<string, any>): Promise<any> {
+    return formDataRequest<any>('POST', '/api/Complaints', data);
   },
 
-  async createVilla(villa: any): Promise<any> {
-    return request<any>('POST', '/api/Villas', villa);
+  async getMyComplaints(): Promise<any[]> {
+    return request<any[]>('GET', '/api/Complaints/my-complaints');
   },
 
-  async updateVilla(id: string, villa: any): Promise<any> {
-    return request<any>('PUT', `/api/Villas/${id}`, villa);
+  // Villas API (uses Houses endpoint with form-data)
+  async getVillas(): Promise<HouseModel[]> {
+    return request<HouseModel[]>('GET', '/api/house');
   },
 
-  async deleteVilla(id: string): Promise<any> {
-    return request<any>('DELETE', `/api/Villas/${id}`);
+  async createVilla(userId: string, villa: HouseModel): Promise<HouseModel> {
+    return formDataRequest<HouseModel>('POST', `/api/house/user/${userId}`, villa as unknown as Record<string, any>);
+  },
+
+  async updateVilla(id: string, villa: HouseModel): Promise<HouseModel> {
+    return formDataRequest<HouseModel>('PUT', `/api/house/${id}`, villa as unknown as Record<string, any>);
+  },
+
+  async deleteVilla(id: string, villa: HouseModel): Promise<any> {
+    return formDataRequest<any>('DELETE', `/api/house/${id}`, villa as unknown as Record<string, any>);
   },
 
   // Payments API

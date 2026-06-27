@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Home, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { api } from '../services/api'
 
 interface LoginProps {
@@ -18,18 +18,9 @@ function Login({ onLogin }: LoginProps) {
     setError('')
     setLoading(true)
 
-    // Support standard mock credentials as an automatic alias to live admin
-    let email = username
-    let pwd = password
-    if (username.toLowerCase() === 'rady' && password === '12345') {
-      email = 'admin@azhar.com'
-      pwd = 'Admin@123'
-    }
-
     try {
-      // Direct call to live authentication endpoint
-      await api.loginAdmin({ email, password: pwd })
-      onLogin(email)
+      await api.loginAdmin({ email: username, password })
+      onLogin(username)
     } catch (err: any) {
       console.error('Login error:', err)
       setError(err.message || 'اسم المستخدم أو كلمة المرور غير صحيحة / Invalid credentials')
@@ -39,42 +30,42 @@ function Login({ onLogin }: LoginProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-800 via-primary-700 to-primary-600 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+    <div className="min-h-screen relative flex items-center justify-center p-4 bg-cover bg-center" style={{ backgroundImage: 'url(/Login.png)' }}>
+      <div className="absolute inset-0 bg-black/60"></div>
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-md p-8 relative z-10 border border-white/20">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-primary-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Home className="w-8 h-8 text-white" />
+          <div className="w-32 h-32 rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden">
+            <img src="/logo.png" alt="Azhar" className="w-full h-full object-contain brightness-0 invert" />
           </div>
-<h1 className="text-2xl font-bold text-slate-800">Azhar System</h1>
-          <p className="text-slate-500 text-sm mt-1">Housing Authority Dashboard</p>
+          <p className="text-white/70 text-sm mt-1">Housing Authority Dashboard</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Username</label>
+            <label className="block text-sm font-medium text-white/80 mb-2">Username</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-300 transition-all"
+              className="w-full h-12 px-4 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/50 transition-all"
               placeholder="Enter username"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
+            <label className="block text-sm font-medium text-white/80 mb-2">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-300 transition-all"
+                className="w-full h-12 px-4 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-white/40 focus:border-white/50 transition-all"
                 placeholder="Enter password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/80"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -82,21 +73,38 @@ function Login({ onLogin }: LoginProps) {
           </div>
 
           {error && (
-            <p className="text-red-500 text-sm text-center">{error}</p>
+            <p className="text-red-300 text-sm text-center">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full h-12 bg-white/20 hover:bg-white/30 disabled:bg-white/10 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2 border border-white/30"
           >
             {loading && <Loader2 className="w-5 h-5 animate-spin" />}
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
-        <p className="text-center text-slate-400 text-xs mt-6">
-          default: rady / 12345
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => {
+              setUsername('admin@azhar.com')
+              setPassword('Admin@123')
+              setTimeout(() => {
+                const form = document.querySelector('form')
+                form?.requestSubmit()
+              }, 50)
+            }}
+            className="w-full h-10 border-2 border-dashed border-white/30 text-white/80 hover:bg-white/10 rounded-xl font-medium text-sm transition-colors"
+          >
+            ⚡ Quick Login (admin)
+          </button>
+        </div>
+
+        <p className="text-center text-white/50 text-xs mt-4">
+          default: admin@azhar.com / Admin@123
         </p>
       </div>
     </div>

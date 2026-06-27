@@ -66,12 +66,7 @@ function Payments({ language }: PaymentsProps) {
     } catch (err: any) {
       console.error('Fetch payments error:', err)
       setError(language === 'AR' ? 'فشل تحميل بيانات المدفوعات من الخادم' : 'Failed to fetch payments from server')
-      // Fallback mock data
-      setPayments([
-        { id: '1', tenantName: 'أحمد محمد', villaNumber: '12', amount: 5000, month: 'يناير', year: 2024, status: 'paid', paymentDate: '2024-01-05', paymentMethod: 'bank_transfer' },
-        { id: '2', tenantName: 'خالد الغامدي', villaNumber: '8', amount: 4500, month: 'يناير', year: 2024, status: 'paid', paymentDate: '2024-01-10', paymentMethod: 'card' },
-        { id: '3', tenantName: 'عبدالله الزهراني', villaNumber: '15', amount: 5500, month: 'يناير', year: 2024, status: 'pending', paymentMethod: 'cash' },
-      ])
+      setPayments([])
     } finally {
       setLoading(false)
     }
@@ -119,15 +114,7 @@ function Payments({ language }: PaymentsProps) {
       setShowModal(false)
     } catch (err: any) {
       console.error('Save payment error:', err)
-      alert(language === 'AR' ? `فشل حفظ الدفعة: ${err.message}` : `Failed to save payment: ${err.message}`)
-      // Fallback
-      if (editingPayment) {
-        setPayments(payments.map(p => p.id === editingPayment.id ? { ...p, ...formData } as Payment : p))
-      } else {
-        const newPayment: Payment = { ...formData, id: String(Date.now()) } as Payment
-        setPayments([...payments, newPayment])
-      }
-      setShowModal(false)
+      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
     }
   }
 

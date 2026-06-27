@@ -1,52 +1,19 @@
-import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, Image, Loader2, AlertCircle } from 'lucide-react'
-import { api } from '../services/api'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, Edit, Trash2, Eye, X, Image, Upload, Loader2, AlertCircle } from 'lucide-react'
+import { api, API_BASE_URL } from '../services/api'
 
 interface Advertisement {
   id: string
   title: string
   description: string
-  type: string
   image?: string
-  link?: string
-  target?: 'all' | 'tenants' | 'owners'
-  status?: 'active' | 'inactive'
-  startDate?: string
-  endDate?: string
-  views?: number
+  date?: string
   createdAt?: string
 }
 
 interface AdsProps {
   language: 'AR' | 'EN'
 }
-
-const MOCK_ADS: Advertisement[] = [
-  {
-    id: '1',
-    title: 'عرض خاص على الإيجار',
-    description: 'خصم 10% على الإيجار السنوي',
-    type: 'Offer',
-    image: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400',
-    target: 'all',
-    status: 'active',
-    startDate: '2024-01-01',
-    endDate: '2024-03-31',
-    views: 150,
-  },
-  {
-    id: '2',
-    title: 'صيانة مجانية',
-    description: 'صيانة مجانية لجميع الوحدات خلال فبراير',
-    type: 'Announcement',
-    image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400',
-    target: 'tenants',
-    status: 'active',
-    startDate: '2024-02-01',
-    endDate: '2024-02-28',
-    views: 80,
-  },
-]
 
 function Ads({ language }: AdsProps) {
   const [ads, setAds] = useState<Advertisement[]>([])
@@ -61,19 +28,21 @@ function Ads({ language }: AdsProps) {
   const [viewingAd, setViewingAd] = useState<Advertisement | null>(null)
   const [formData, setFormData] = useState<Partial<Advertisement>>({})
   const [imagePreview, setImagePreview] = useState('')
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Map backend announcement to local model
+  const resolveImage = (item: any): string => {
+    const raw = item.imageUrls?.[0] ?? item.imageUrl ?? (Array.isArray(item.images) ? item.images[0] : '') ?? item.image ?? ''
+    if (raw && raw.startsWith('/')) return API_BASE_URL + raw
+    return raw
+  }
+
   const mapAnnouncement = (item: any): Advertisement => ({
     id: String(item.id ?? item.announcementId ?? Date.now()),
     title: item.title ?? '',
     description: item.description ?? item.content ?? '',
-    type: item.type ?? 'Announcement',
-    image: item.image ?? item.imageUrl ?? '',
-    target: item.target ?? 'all',
-    status: item.isActive === false ? 'inactive' : 'active',
-    startDate: item.startDate ?? item.createdAt?.split('T')[0] ?? '',
-    endDate: item.endDate ?? '',
-    views: item.views ?? item.viewCount ?? 0,
+    image: resolveImage(item),
+    date: item.announcementDate?.split('T')[0] ?? item.createdAt?.split('T')[0] ?? '',
     createdAt: item.createdAt,
   })
 
@@ -82,17 +51,17 @@ function Ads({ language }: AdsProps) {
     setError(null)
     try {
       const data = await api.getAnnouncements()
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         setAds(data.map(mapAnnouncement))
       } else {
-        setAds(MOCK_ADS)
+        setAds([])
       }
     } catch (err: any) {
-      console.warn('Announcements API failed, falling back to mock data:', err.message)
-      setAds(MOCK_ADS)
+      console.error('Announcements API error:', err)
       setError(language === 'AR'
-        ? 'تعذر الاتصال بالخادم — يتم عرض بيانات تجريبية'
-        : 'Could not reach server — showing sample data')
+        ? 'تعذر تحميل الإعلانات من الخادم'
+        : 'Failed to load announcements from server')
+      setAds([])
     } finally {
       setLoading(false)
     }
@@ -104,8 +73,9 @@ function Ads({ language }: AdsProps) {
 
   const handleAdd = () => {
     setEditingAd(null)
-    setFormData({ title: '', description: '', type: 'Announcement', image: '', target: 'all', status: 'active', startDate: '', endDate: '', views: 0 })
+    setFormData({ title: '', description: '', date: new Date().toISOString().split('T')[0] })
     setImagePreview('')
+    setImageFiles([])
     setShowModal(true)
   }
 
@@ -113,6 +83,7 @@ function Ads({ language }: AdsProps) {
     setEditingAd(ad)
     setFormData({ ...ad })
     setImagePreview(ad.image ?? '')
+    setImageFiles([])
     setShowModal(true)
   }
 
@@ -125,12 +96,16 @@ function Ads({ language }: AdsProps) {
     if (!window.confirm(language === 'AR' ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete?')) return
     setDeleting(id)
     try {
-      await api.deleteAnnouncement(id)
+      const ad = ads.find(a => a.id === id)
+      await api.deleteAnnouncement(id, ad ? {
+        title: ad.title,
+        description: ad.description,
+        announcementDate: ad.date ? new Date(ad.date).toISOString() : new Date().toISOString(),
+      } : undefined)
       setAds(ads.filter(a => a.id !== id))
     } catch (err: any) {
-      console.warn('Delete announcement failed:', err.message)
-      // Fallback: remove locally even if API fails
-      setAds(ads.filter(a => a.id !== id))
+      console.error('Delete announcement error:', err)
+      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
     } finally {
       setDeleting(null)
     }
@@ -139,47 +114,44 @@ function Ads({ language }: AdsProps) {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const payload = {
+      const payload: Record<string, any> = {
         title: formData.title ?? '',
         description: formData.description ?? '',
-        type: formData.type ?? 'Announcement',
+        announcementDate: formData.date ? new Date(formData.date).toISOString() : new Date().toISOString(),
+      }
+      if (imageFiles.length > 0) {
+        payload.images = imageFiles
       }
 
       if (editingAd) {
-        // No dedicated PUT endpoint for announcements — update locally
+        await api.updateAnnouncement(editingAd.id, payload)
         setAds(ads.map(a => a.id === editingAd.id ? { ...a, ...formData } as Advertisement : a))
+        setShowModal(false)
       } else {
-        try {
-          const created = await api.createAnnouncement(payload)
-          const newAd = mapAnnouncement({ ...payload, ...created })
-          setAds([newAd, ...ads])
-        } catch (err: any) {
-          console.warn('Create announcement failed:', err.message)
-          const newAd: Advertisement = { ...formData, id: String(Date.now()) } as Advertisement
-          setAds([newAd, ...ads])
-        }
+        const created = await api.createAnnouncement(payload)
+        const newAd = mapAnnouncement({ ...payload, ...created })
+        setAds([newAd, ...ads])
+        setShowModal(false)
       }
-      setShowModal(false)
+    } catch (err: any) {
+      console.error('Save announcement error:', err)
+      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
     } finally {
       setSaving(false)
     }
   }
 
-  const handleImageUrlChange = (url: string) => {
-    setImagePreview(url)
-    setFormData({ ...formData, image: url })
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files && files.length > 0) {
+      setImagePreview(URL.createObjectURL(files[0]))
+      setImageFiles(Array.from(files))
+    }
   }
 
-  const getStatusBadge = (status?: string) => {
-    const styles: Record<string, string> = { active: 'bg-green-100 text-green-700', inactive: 'bg-slate-100 text-slate-700' }
-    const labels: Record<string, string> = { active: language === 'AR' ? 'نشط' : 'Active', inactive: language === 'AR' ? 'غير نشط' : 'Inactive' }
-    const s = status ?? 'active'
-    return <span className={`px-2 py-1 rounded-full text-xs ${styles[s] ?? styles.active}`}>{labels[s] ?? labels.active}</span>
-  }
-
-  const getTargetBadge = (target?: string) => {
-    const labels: Record<string, string> = { all: language === 'AR' ? 'الكل' : 'All', tenants: language === 'AR' ? 'المستأجرين' : 'Tenants', owners: language === 'AR' ? 'المالكين' : 'Owners' }
-    return labels[target ?? 'all'] ?? (language === 'AR' ? 'الكل' : 'All')
+  const clearImage = () => {
+    setImagePreview('')
+    setImageFiles([])
   }
 
   if (loading) {
@@ -212,18 +184,16 @@ function Ads({ language }: AdsProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {ads.map(ad => (
           <div key={ad.id} className="border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="h-40 bg-slate-100 relative">
+              <div className="h-40 bg-slate-100">
               {ad.image
                 ? <img src={ad.image} alt={ad.title} className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center"><Image className="w-12 h-12 text-slate-300" /></div>}
-              <div className="absolute top-2 left-2">{getStatusBadge(ad.status)}</div>
             </div>
-            <div className="p-4">
+              <div className="p-4">
               <h3 className="font-bold text-slate-800 mb-1">{ad.title}</h3>
-              <p className="text-sm text-slate-500 mb-3">{ad.description}</p>
-              <div className="flex items-center justify-between text-sm text-slate-500">
-                <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full">{ad.type}</span>
-                <span>{getTargetBadge(ad.target)}</span>
+              <p className="text-sm text-slate-500 mb-3 line-clamp-2">{ad.description}</p>
+              <div className="flex items-center text-xs text-slate-400">
+                {ad.date && <span>{ad.date}</span>}
               </div>
               <div className="flex gap-2 mt-3">
                 <button onClick={() => handleView(ad)} className="flex-1 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm"><Eye className="w-4 h-4 inline ml-1" />{language === 'AR' ? 'عرض' : 'View'}</button>
@@ -267,45 +237,24 @@ function Ads({ language }: AdsProps) {
                 <textarea value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={2} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{language === 'AR' ? 'النوع' : 'Type'}</label>
-                <select value={formData.type || 'Announcement'} onChange={e => setFormData({ ...formData, type: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
-                  <option value="Announcement">{language === 'AR' ? 'إعلان' : 'Announcement'}</option>
-                  <option value="Offer">{language === 'AR' ? 'عرض' : 'Offer'}</option>
-                  <option value="News">{language === 'AR' ? 'أخبار' : 'News'}</option>
-                  <option value="Alert">{language === 'AR' ? 'تنبيه' : 'Alert'}</option>
-                </select>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{language === 'AR' ? 'التاريخ' : 'Date'}</label>
+                <input type="date" value={formData.date || ''} onChange={e => setFormData({ ...formData, date: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{language === 'AR' ? 'رابط الصورة' : 'Image URL'}</label>
-                <input type="text" value={formData.image || ''} onChange={e => handleImageUrlChange(e.target.value)} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" placeholder="https://..." />
-              </div>
-              {imagePreview && <img src={imagePreview} alt="Preview" className="w-full h-32 object-cover rounded-lg" />}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{language === 'AR' ? 'الجمهور المستهدف' : 'Target'}</label>
-                  <select value={formData.target || 'all'} onChange={e => setFormData({ ...formData, target: e.target.value as any })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
-                    <option value="all">{language === 'AR' ? 'الكل' : 'All'}</option>
-                    <option value="tenants">{language === 'AR' ? 'المستأجرين' : 'Tenants'}</option>
-                    <option value="owners">{language === 'AR' ? 'المالكين' : 'Owners'}</option>
-                  </select>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{language === 'AR' ? 'الصور' : 'Images'}</label>
+                <div className="flex items-center gap-2">
+                  <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm text-slate-600 hover:bg-slate-50">
+                    <Upload className="w-4 h-4" />{language === 'AR' ? 'اختر صوراً' : 'Choose Images'}
+                  </button>
+                  {imageFiles.length > 0 && <span className="text-sm text-slate-500">{imageFiles.length} {language === 'AR' ? 'صور' : 'image(s)'}</span>}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{language === 'AR' ? 'الحالة' : 'Status'}</label>
-                  <select value={formData.status || 'active'} onChange={e => setFormData({ ...formData, status: e.target.value as any })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
-                    <option value="active">{language === 'AR' ? 'نشط' : 'Active'}</option>
-                    <option value="inactive">{language === 'AR' ? 'غير نشط' : 'Inactive'}</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{language === 'AR' ? 'تاريخ البداية' : 'Start Date'}</label>
-                  <input type="date" value={formData.startDate || ''} onChange={e => setFormData({ ...formData, startDate: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{language === 'AR' ? 'تاريخ النهاية' : 'End Date'}</label>
-                  <input type="date" value={formData.endDate || ''} onChange={e => setFormData({ ...formData, endDate: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
-                </div>
+                {imagePreview && (
+                  <div className="relative mt-2 inline-block">
+                    <img src={imagePreview} alt="Preview" className="h-32 rounded-lg object-cover" />
+                    <button type="button" onClick={clearImage} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5"><X className="w-4 h-4" /></button>
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex gap-3 mt-6">
@@ -329,13 +278,7 @@ function Ads({ language }: AdsProps) {
             </div>
             {viewingAd.image && <img src={viewingAd.image} alt={viewingAd.title} className="w-full h-40 object-cover rounded-xl mb-4" />}
             <p className="text-sm text-slate-600 mb-4">{viewingAd.description}</p>
-            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-              <div><p className="text-slate-400">{language === 'AR' ? 'النوع' : 'Type'}</p><p>{viewingAd.type}</p></div>
-              <div><p className="text-slate-400">{language === 'AR' ? 'الجمهور' : 'Target'}</p><p>{getTargetBadge(viewingAd.target)}</p></div>
-              {viewingAd.startDate && <div><p className="text-slate-400">{language === 'AR' ? 'البداية' : 'Start'}</p><p>{viewingAd.startDate}</p></div>}
-              {viewingAd.endDate && <div><p className="text-slate-400">{language === 'AR' ? 'النهاية' : 'End'}</p><p>{viewingAd.endDate}</p></div>}
-            </div>
-            {getStatusBadge(viewingAd.status)}
+            {viewingAd.date && <p className="text-xs text-slate-400 mb-4">{viewingAd.date}</p>}
             <button onClick={() => setShowViewModal(false)} className="w-full h-10 mt-4 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200">{language === 'AR' ? 'إغلاق' : 'Close'}</button>
           </div>
         </div>

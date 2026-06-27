@@ -57,12 +57,7 @@ function Complaints({ language }: ComplaintsProps) {
     } catch (err: any) {
       console.error('Fetch complaints error:', err)
       setError(language === 'AR' ? 'فشل تحميل الشكاوى من الخادم' : 'Failed to fetch complaints from server')
-      // Fallback mock data
-      setComplaints([
-        { id: '1', title: 'ضوضاء مزعجة', description: 'الجيران يقومون بأعمال بناء في وقت متأخر', villaNumber: '5', tenantName: 'أحمد محمد', category: 'noise', status: 'pending', createdAt: '2024-01-15' },
-        { id: '2', title: 'مشكلة مياه', description: 'انقطاع المياه بشكل متكرر', villaNumber: '12', tenantName: 'خالد الغامدي', category: 'maintenance', status: 'in_progress', createdAt: '2024-01-14' },
-        { id: '3', title: 'مخالفة قواعد', description: 'تستخدم الفلا لأغراض تجارية', villaNumber: '8', tenantName: 'عبدالله الزهراني', category: 'behavior', status: 'resolved', createdAt: '2024-01-10', resolvedAt: '2024-01-12' },
-      ])
+      setComplaints([])
     } finally {
       setLoading(false)
     }
@@ -103,21 +98,19 @@ function Complaints({ language }: ComplaintsProps) {
         await api.replyComplaint(String(editingComplaint.id), { reply, status })
         setComplaints(complaints.map(c => c.id === editingComplaint.id ? { ...c, ...formData } as Complaint : c))
       } else {
-        const newComplaint: Complaint = { ...formData, id: String(Date.now()) } as Complaint
-        setComplaints([...complaints, newComplaint])
+        const payload: Record<string, any> = {
+          Title: formData.title ?? '',
+          Description: formData.description ?? '',
+          Category: formData.category ?? 'other',
+        }
+        const created = await api.createComplaint(payload)
+        const newComplaint = mapToFrontend(created ?? { ...formData, id: String(Date.now()) })
+        setComplaints([newComplaint, ...complaints])
       }
       setShowModal(false)
     } catch (err: any) {
       console.error('Save complaint error:', err)
-      alert(language === 'AR' ? `فشل حفظ الرد: ${err.message}` : `Failed to save reply: ${err.message}`)
-      // Fallback
-      if (editingComplaint) {
-        setComplaints(complaints.map(c => c.id === editingComplaint.id ? { ...c, ...formData } as Complaint : c))
-      } else {
-        const newComplaint: Complaint = { ...formData, id: String(Date.now()) } as Complaint
-        setComplaints([...complaints, newComplaint])
-      }
-      setShowModal(false)
+      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
     }
   }
 

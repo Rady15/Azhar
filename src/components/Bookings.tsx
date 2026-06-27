@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, Eye, X, CalendarCheck, User, Home, Clock, CheckCircle, Loader2 } from 'lucide-react'
-import { api } from '../services/api'
+import { api, FacilityModel } from '../services/api'
 
 interface Booking {
   id: string | number
+  facilityId: string
   facilityName: string
   tenantName: string
   villaNumber: string
@@ -23,24 +24,17 @@ function Bookings({ language }: BookingsProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const [facilities, setFacilities] = useState<FacilityModel[]>([])
   const [showModal, setShowModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null)
   const [viewingBooking, setViewingBooking] = useState<Booking | null>(null)
   const [formData, setFormData] = useState<Partial<Booking>>({})
 
-  const facilities = [
-    language === 'AR' ? 'نادي الرجال' : 'Men\'s Club',
-    language === 'AR' ? 'المسبح' : 'Swimming Pool',
-    language === 'AR' ? 'قاعة المناسبات' : 'Event Hall',
-    language === 'AR' ? 'نادي السيدات' : 'Women\'s Club',
-    language === 'AR' ? 'ملعبtennis' : 'Tennis Court',
-    language === 'AR' ? 'صالة رياضية' : 'Gym',
-  ]
-
   // Map Backend API model to Frontend Booking model
   const mapToFrontend = (item: any): Booking => ({
     id: item.id || String(Date.now()),
+    facilityId: item.facilityId || '',
     facilityName: item.facilityName || 'نادي الرياضي',
     tenantName: item.tenantName || 'أحمد محمد',
     villaNumber: item.villaNumber || '12',
@@ -59,39 +53,50 @@ function Bookings({ language }: BookingsProps) {
     }
   }
 
-  const fetchBookings = async () => {
+  const fetchData = async () => {
     setLoading(true)
     setError('')
     try {
-      const data = await api.getAllBookings()
-      if (data && Array.isArray((data as any).bookings)) {
-        setBookings((data as any).bookings.map(mapToFrontend))
-      } else if (data && Array.isArray((data as any).data)) {
-        setBookings((data as any).data.map(mapToFrontend))
-      } else if (Array.isArray(data)) {
-        setBookings(data.map(mapToFrontend))
+      const [bookingsRes, facilitiesRes] = await Promise.allSettled([
+        api.getAllBookings(),
+        api.getFacilities()
+      ])
+
+      if (bookingsRes.status === 'fulfilled') {
+        const data = bookingsRes.value
+        if (data && Array.isArray((data as any).bookings)) {
+          setBookings((data as any).bookings.map(mapToFrontend))
+        } else if (data && Array.isArray((data as any).data)) {
+          setBookings((data as any).data.map(mapToFrontend))
+        } else if (Array.isArray(data)) {
+          setBookings(data.map(mapToFrontend))
+        }
+      }
+
+      if (facilitiesRes.status === 'fulfilled') {
+        const data = facilitiesRes.value
+        if (data && Array.isArray((data as any).facilities)) {
+          setFacilities((data as any).facilities)
+        } else if (Array.isArray(data)) {
+          setFacilities(data)
+        }
       }
     } catch (err: any) {
-      console.error('Fetch bookings error:', err)
-      setError(language === 'AR' ? 'فشل تحميل حجوزات المرافق من الخادم' : 'Failed to fetch bookings from server')
-      // Fallback
-      setBookings([
-        { id: '1', facilityName: 'نادي الرجال', tenantName: 'أحمد محمد', villaNumber: '12', date: '2024-01-20', time: '18:00', duration: 2, status: 'confirmed', notes: 'حجز للعب乒乓球' },
-        { id: '2', facilityName: 'المسبح', tenantName: 'خالد الغامدي', villaNumber: '8', date: '2024-01-21', time: '10:00', duration: 1, status: 'pending', notes: '' },
-        { id: '3', facilityName: 'قاعة المناسبات', tenantName: 'عبدالله الزهراني', villaNumber: '15', date: '2024-01-25', time: '19:00', duration: 4, status: 'confirmed', notes: 'حفلة周年' },
-      ])
+      console.error('Fetch data error:', err)
+      setError(language === 'AR' ? 'فشل تحميل البيانات من الخادم' : 'Failed to fetch data from server')
+      setBookings([])
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchBookings()
+    fetchData()
   }, [])
 
   const handleAdd = () => {
     setEditingBooking(null)
-    setFormData({ facilityName: '', tenantName: '', villaNumber: '', date: '', time: '', duration: 1, status: 'pending', notes: '' })
+    setFormData({ facilityId: '', facilityName: '', tenantName: '', villaNumber: '', date: '', time: '', duration: 1, status: 'pending', notes: '' })
     setShowModal(true)
   }
 
@@ -106,9 +111,14 @@ function Bookings({ language }: BookingsProps) {
     setShowViewModal(true)
   }
 
-  const handleDelete = (id: string | number) => {
-    if (window.confirm(language === 'AR' ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete?')) {
+  const handleDelete = async (id: string | number) => {
+    if (!window.confirm(language === 'AR' ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete?')) return
+    try {
+      await api.cancelBooking(String(id))
       setBookings(bookings.filter(b => b.id !== id))
+    } catch (err: any) {
+      console.error('Cancel booking error:', err)
+      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
     }
   }
 
@@ -122,23 +132,20 @@ function Bookings({ language }: BookingsProps) {
         await api.updateBookingStatus(targetId, statusStr)
         setBookings(bookings.map(b => b.id === editingBooking.id ? { ...b, ...formData } as Booking : b))
       } else {
-        // Safe creation locally and simulation
-        const newBooking: Booking = { ...formData, id: String(Date.now()) } as Booking
-        setBookings([...bookings, newBooking])
+        const created = await api.createBooking({
+          facilityId: formData.facilityId ?? '',
+          bookingDate: formData.date ?? '',
+          startTime: formData.time ?? '',
+          endTime: '',
+          guestsCount: formData.duration ?? 1,
+        })
+        const newBooking = mapToFrontend(created ?? { ...formData, id: String(Date.now()) })
+        setBookings([newBooking, ...bookings])
       }
       setShowModal(false)
     } catch (err: any) {
       console.error('Update status API error:', err)
-      alert(language === 'AR' ? `فشل تحديث حالة الحجز: ${err.message}` : `Failed to update booking status on server: ${err.message}`)
-      
-      // Fallback
-      if (editingBooking) {
-        setBookings(bookings.map(b => b.id === editingBooking.id ? { ...b, ...formData } as Booking : b))
-      } else {
-        const newBooking: Booking = { ...formData, id: String(Date.now()) } as Booking
-        setBookings([...bookings, newBooking])
-      }
-      setShowModal(false)
+      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
     }
   }
 
@@ -169,7 +176,7 @@ function Bookings({ language }: BookingsProps) {
       {error && (
         <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-sm flex justify-between items-center">
           <span>{error}</span>
-          <button onClick={fetchBookings} className="underline text-xs hover:text-red-900">{language === 'AR' ? 'إعادة المحاولة' : 'Retry'}</button>
+          <button onClick={fetchData} className="underline text-xs hover:text-red-900">{language === 'AR' ? 'إعادة المحاولة' : 'Retry'}</button>
         </div>
       )}
 
@@ -235,9 +242,12 @@ function Bookings({ language }: BookingsProps) {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{language === 'AR' ? 'المرفق' : 'Facility'}</label>
-                <select value={formData.facilityName || ''} onChange={e => setFormData({ ...formData, facilityName: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
+                <select value={formData.facilityId || ''} onChange={e => {
+                  const selected = facilities.find(f => f.id === e.target.value)
+                  setFormData({ ...formData, facilityId: e.target.value, facilityName: selected?.name || '' })
+                }} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
                   <option value="">{language === 'AR' ? 'اختر المرفق' : 'Select Facility'}</option>
-                  {facilities.map(f => <option key={f} value={f}>{f}</option>)}
+                  {facilities.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">

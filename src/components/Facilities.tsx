@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { Plus, Trash2, Loader2, Check, X, Building2 } from 'lucide-react'
-import { api, FacilityModel } from '../services/api'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, Trash2, Loader2, Check, X, Building2, Upload, Image as ImageIcon } from 'lucide-react'
+import { api, API_BASE_URL, FacilityModel } from '../services/api'
 
 interface FacilitiesProps {
   language: 'AR' | 'EN'
@@ -24,6 +24,14 @@ export default function Facilities({ language }: FacilitiesProps) {
     isAvailable: true
   })
   const [saving, setSaving] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const resolveImage = (url?: string | null): string => {
+    if (url && url.startsWith('/')) return API_BASE_URL + url
+    return url || ''
+  }
 
   // Fetch facilities and bookings in parallel to determine booking status dynamically
   const fetchFacilities = async () => {
@@ -47,16 +55,6 @@ export default function Facilities({ language }: FacilitiesProps) {
         }
       }
 
-      // Default fallback lists if server returns empty
-      if (facilitiesList.length === 0) {
-        facilitiesList = [
-          { id: '97684790-f46a-48a1-9d8a-8825fab3c41d', name: 'Olympic Pool Complex', description: 'Year-round heated pool with premium services.', maxCapacity: 20, isAvailable: true },
-          { id: '2', name: 'Grand Celebration Hall', description: 'Premium celebration party hall for family occasions.', maxCapacity: 100, isAvailable: true },
-          { id: '3', name: 'Elite Gym & Health Club', description: 'Modern wellness center with cardiovascular equipment.', maxCapacity: 15, isAvailable: true },
-          { id: '4', name: 'Azhar Football Court', description: 'Grass soccer field with premium floodlights.', maxCapacity: 22, isAvailable: false }
-        ]
-      }
-
       let bookingsList: any[] = []
       if (bookingsRes.status === 'fulfilled') {
         const data = bookingsRes.value
@@ -70,8 +68,7 @@ export default function Facilities({ language }: FacilitiesProps) {
       }
 
       // Map facility items and check if there are active bookings
-      const enriched = facilitiesList.map(facility => {
-        // A facility is marked booked if it has a confirmed/pending booking
+      const enriched = facilitiesList.map((facility: any) => {
         const hasBooking = bookingsList.some(b => 
           b.facilityName && 
           b.facilityName.trim().toLowerCase() === facility.name.trim().toLowerCase() &&
@@ -79,6 +76,7 @@ export default function Facilities({ language }: FacilitiesProps) {
         )
         return {
           ...facility,
+          image: facility.image || facility.imageUrl || '',
           isBooked: hasBooking
         }
       })
@@ -102,12 +100,10 @@ export default function Facilities({ language }: FacilitiesProps) {
         const adminEmail = localStorage.getItem('azhar_email') || 'admin@azhar.com'
         await api.deleteFacility(id, { email: adminEmail })
         setFacilities(prev => prev.filter(f => f.id !== id))
-      } catch (err: any) {
-        console.error('Delete facility error:', err)
-        alert(language === 'AR' ? `فشل الحذف: ${err.message}` : `Delete failed: ${err.message}`)
-        // Fallback update
-        setFacilities(prev => prev.filter(f => f.id !== id))
-      }
+    } catch (err: any) {
+      console.error('Delete facility error:', err)
+      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+    }
     }
   }
 
@@ -117,35 +113,25 @@ export default function Facilities({ language }: FacilitiesProps) {
 
     setSaving(true)
     try {
-      const payload: FacilityModel = {
+      const payload: any = {
         name: formData.name,
         description: formData.description || '',
         maxCapacity: Number(formData.maxCapacity) || 10,
         isAvailable: formData.isAvailable ?? true
       }
-      
+      if (imageFile) {
+        payload.image = imageFile
+      }
+
       const newFacility = await api.createFacility(payload)
       setFacilities(prev => [{ ...newFacility, isBooked: false }, ...prev])
       setShowModal(false)
-      // Reset form
       setFormData({ name: '', description: '', maxCapacity: 15, isAvailable: true })
+      setImageFile(null)
+      setImagePreview('')
     } catch (err: any) {
       console.error('Save facility error:', err)
-      alert(language === 'AR' ? `فشل الإضافة: ${err.message}` : `Create failed: ${err.message}`)
-      
-      // Local fallback create
-      const fakeId = `facility-fake-${Date.now()}`
-      const fallbackFacility: EnrichedFacility = {
-        id: fakeId,
-        name: formData.name,
-        description: formData.description || '',
-        maxCapacity: Number(formData.maxCapacity) || 10,
-        isAvailable: formData.isAvailable ?? true,
-        isBooked: false
-      }
-      setFacilities(prev => [fallbackFacility, ...prev])
-      setShowModal(false)
-      setFormData({ name: '', description: '', maxCapacity: 15, isAvailable: true })
+      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
     } finally {
       setSaving(false)
     }
@@ -187,61 +173,62 @@ export default function Facilities({ language }: FacilitiesProps) {
           <p className="text-slate-400 text-xs font-medium">{language === 'AR' ? 'جاري تحميل قائمة المرافق...' : 'Loading housing facilities...'}</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200 text-slate-500 text-xs font-semibold">
-                <th className={`pb-3 px-4 ${language === 'AR' ? 'text-right' : 'text-left'}`}>{language === 'AR' ? 'اسم المرفق' : 'Facility Name'}</th>
-                <th className={`pb-3 px-4 ${language === 'AR' ? 'text-right' : 'text-left'}`}>{language === 'AR' ? 'الوصف والتفاصيل' : 'Description'}</th>
-                <th className={`pb-3 px-4 ${language === 'AR' ? 'text-right' : 'text-left'}`}>{language === 'AR' ? 'أقصى سعة حضور' : 'Max Capacity'}</th>
-                <th className={`pb-3 px-4 ${language === 'AR' ? 'text-right' : 'text-left'}`}>{language === 'AR' ? 'حالة التشغيل' : 'Operation Status'}</th>
-                <th className={`pb-3 px-4 ${language === 'AR' ? 'text-right' : 'text-left'}`}>{language === 'AR' ? 'حالة الحجز' : 'Booking Status'}</th>
-                <th className={`pb-3 px-4 ${language === 'AR' ? 'text-center' : 'text-center'}`}>{language === 'AR' ? 'الإجراءات' : 'Actions'}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {facilities.map((facility) => (
-                <tr key={facility.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors text-xs text-slate-700">
-                  <td className="py-4 px-4 font-bold text-slate-900">{facility.name}</td>
-                  <td className="py-4 px-4 max-w-xs truncate text-slate-500" title={facility.description}>{facility.description}</td>
-                  <td className="py-4 px-4 font-semibold">{facility.maxCapacity} {language === 'AR' ? 'شخص كحد أقصى' : 'people max'}</td>
-                  <td className="py-4 px-4">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                      facility.isAvailable 
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
-                        : 'bg-rose-50 text-rose-700 border border-rose-100'
-                    }`}>
-                      {facility.isAvailable 
-                        ? (language === 'AR' ? 'متاح للاستخدام' : 'Available') 
-                        : (language === 'AR' ? 'مغلق مؤقتاً' : 'Closed')
-                      }
-                    </span>
-                  </td>
-                  <td className="py-4 px-4">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                      facility.isBooked 
-                        ? 'bg-amber-50 text-amber-700 border border-amber-100' 
-                        : 'bg-slate-100 text-slate-600 border border-slate-200'
-                    }`}>
-                      {facility.isBooked 
-                        ? (language === 'AR' ? 'محجوز حالياً' : 'Currently Booked') 
-                        : (language === 'AR' ? 'شاغر ومتاح' : 'Vacant & Ready')
-                      }
-                    </span>
-                  </td>
-                  <td className="py-4 px-4 text-center">
-                    <button
-                      onClick={() => handleDelete(String(facility.id))}
-                      className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-                      title={language === 'AR' ? 'حذف المرفق' : 'Delete Facility'}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {facilities.map((facility) => (
+            <div key={facility.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="h-40 bg-slate-100 relative">
+                {resolveImage(facility.image) ? (
+                  <img src={resolveImage(facility.image)} alt={facility.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ImageIcon className="w-12 h-12 text-slate-300" />
+                  </div>
+                )}
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    facility.isAvailable 
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                      : 'bg-rose-50 text-rose-700 border border-rose-100'
+                  }`}>
+                    {facility.isAvailable 
+                      ? (language === 'AR' ? 'متاح' : 'Available') 
+                      : (language === 'AR' ? 'مغلق' : 'Closed')
+                    }
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                    facility.isBooked 
+                      ? 'bg-amber-50 text-amber-700 border border-amber-100' 
+                      : 'bg-slate-100 text-slate-600 border border-slate-200'
+                  }`}>
+                    {facility.isBooked 
+                      ? (language === 'AR' ? 'محجوز' : 'Booked') 
+                      : (language === 'AR' ? 'شاغر' : 'Vacant')
+                    }
+                  </span>
+                </div>
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-slate-800 mb-1">{facility.name}</h3>
+                <p className="text-sm text-slate-500 mb-3 line-clamp-2">{facility.description}</p>
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span>{facility.maxCapacity} {language === 'AR' ? 'شخص' : 'people max'}</span>
+                  <button
+                    onClick={() => handleDelete(String(facility.id))}
+                    className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
+                    title={language === 'AR' ? 'حذف المرفق' : 'Delete Facility'}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {facilities.length === 0 && (
+            <div className="col-span-full text-center py-16 text-slate-400">
+              <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>{language === 'AR' ? 'لا توجد مرافق بعد' : 'No facilities yet'}</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -318,6 +305,33 @@ export default function Facilities({ language }: FacilitiesProps) {
                       {language === 'AR' ? 'متاح للاستخدام فوراً' : 'Is Available'}
                     </span>
                   </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {language === 'AR' ? 'صورة المرفق' : 'Facility Image'}
+                </label>
+                <div className="border-2 border-dashed border-slate-200 rounded-xl p-4">
+                  {imagePreview ? (
+                    <div className="relative mb-3">
+                      <img src={imagePreview} alt="Preview" className="w-full h-32 object-cover rounded-lg" />
+                      <button onClick={() => { setImagePreview(''); setImageFile(null) }} className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : null}
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center justify-center gap-2 w-full py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-xs">
+                    <Upload className="w-4 h-4" />
+                    {language === 'AR' ? 'رفع صورة' : 'Upload Image'}
+                  </button>
+                  <input type="file" ref={fileInputRef} accept="image/*" onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      setImagePreview(URL.createObjectURL(file))
+                      setImageFile(file)
+                    }
+                  }} className="hidden" />
                 </div>
               </div>
 

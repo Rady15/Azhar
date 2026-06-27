@@ -74,12 +74,7 @@ function Maintenance({ language }: MaintenanceProps) {
     } catch (err: any) {
       console.error('Fetch maintenance error:', err)
       setError(language === 'AR' ? 'فشل تحميل طلبات الصيانة من الخادم' : 'Failed to fetch maintenance requests')
-      // Fallback
-      setRequests([
-        { id: '1', title: 'تسرب مياه', description: 'تسرب في أنبوب المياه الرئيسي', villaNumber: '12', tenantName: 'أحمد محمد', priority: 'urgent', status: 'in_progress', createdAt: '2024-01-15', cost: 500 },
-        { id: '2', title: 'صيانة مكيف', description: 'المكيف لا يعمل بشكل صحيح', villaNumber: '8', tenantName: 'خالد الغامدي', priority: 'medium', status: 'pending', createdAt: '2024-01-16', cost: 0 },
-        { id: '3', title: 'إصلاح باب', description: 'باب غرفة النوم يحتاج إصلاح', villaNumber: '15', tenantName: 'عبدالله الزهراني', priority: 'low', status: 'completed', createdAt: '2024-01-10', cost: 150 },
-      ])
+      setRequests([])
     } finally {
       setLoading(false)
     }
@@ -132,16 +127,7 @@ function Maintenance({ language }: MaintenanceProps) {
       setShowModal(false)
     } catch (err: any) {
       console.error('Update status API error:', err)
-      alert(language === 'AR' ? `فشل تحديث الحالة في الخادم: ${err.message}` : `Failed to update status on server: ${err.message}`)
-      
-      // Fallback
-      if (editingRequest) {
-        setRequests(requests.map(r => r.id === editingRequest.id ? { ...r, ...formData } as MaintenanceRequest : r))
-      } else {
-        const newRequest: MaintenanceRequest = { ...formData, id: String(Date.now()) } as MaintenanceRequest
-        setRequests([...requests, newRequest])
-      }
-      setShowModal(false)
+      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
     }
   }
 
