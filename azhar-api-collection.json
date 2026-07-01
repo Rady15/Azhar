@@ -1,0 +1,317 @@
+{
+    "info": {
+        "name": "Azhar Dashboard API - All Endpoints",
+        "description": "جميع واجهات برمجة التطبيقات - Dashboard + Tenants + Houses etc.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Login",
+            "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"admin@azhar.com\",\n  \"password\": \"Admin@123\"\n}",
+                    "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/Account/login",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "Account", "login"]
+                }
+            }
+        },
+        {
+            "name": "Get Dashboard Stats",
+            "description": "إحصائيات لوحة التحكم الرئيسية - returns collectionRate, pendingComplaints, activeMaintenance, totalTenants, totalHouses",
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/Dashboard",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "Dashboard"]
+                }
+            },
+            "response": [
+                {
+                    "name": "Example Response",
+                    "body": "{\n  \"collectionRate\": 85.5,\n  \"pendingComplaints\": 3,\n  \"activeMaintenance\": 5,\n  \"totalTenants\": 24,\n  \"totalHouses\": 20\n}"
+                }
+            ]
+        },
+        {
+            "name": "Get Tenants",
+            "description": "قائمة المستأجرين - with optional ?email= query param",
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/Tenants",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "Tenants"],
+                    "query": [
+                        { "key": "email", "value": "", "disabled": true }
+                    ]
+                }
+            },
+            "response": [
+                {
+                    "name": "Example Response",
+                    "body": "[{\n  \"id\": \"guid\",\n  \"fullName\": \"Aya Ahmed\",\n  \"email\": \"aya@example.com\",\n  \"phoneNumber\": \"01102782069\",\n  \"houseNumber\": \"A-15\",\n  \"contractNumber\": \"CNT-2024-001\",\n  \"contractStartDate\": \"2024-01-01T00:00:00\",\n  \"contractEndDate\": \"2025-01-01T00:00:00\",\n  \"monthlyRent\": 4000,\n  \"paymentDueDay\": 5,\n  \"nationalId\": \"12345678901234\",\n  \"nationality\": \"مصري\",\n  \"isActive\": true\n}]"
+                }
+            ]
+        },
+        {
+            "name": "Create Tenant",
+            "description": "إنشاء مستأجر جديد",
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"fullName\": \"Aya Ahmed\",\n  \"email\": \"aya@example.com\",\n  \"phoneNumber\": \"01102782069\",\n  \"password\": \"Default@123\",\n  \"nationalId\": \"12345678901234\",\n  \"nationality\": \"مصري\",\n  \"houseId\": \"{{houseId}}\",\n  \"contractNumber\": \"CNT-2024-001\",\n  \"contractStartDate\": \"2024-01-01T00:00:00\",\n  \"contractEndDate\": \"2025-01-01T00:00:00\",\n  \"monthlyRent\": 4000,\n  \"paymentDueDay\": 5\n}",
+                    "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/Tenants",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "Tenants"]
+                }
+            },
+            "response": [
+                {
+                    "name": "Example Response",
+                    "body": "{\n  \"id\": \"guid\",\n  \"fullName\": \"Aya Ahmed\",\n  \"email\": \"aya@example.com\",\n  \"phoneNumber\": \"01102782069\",\n  \"houseNumber\": \"A-15\",\n  \"contractNumber\": \"CNT-2024-001\",\n  \"contractStartDate\": \"2024-01-01T00:00:00\",\n  \"contractEndDate\": \"2025-01-01T00:00:00\",\n  \"monthlyRent\": 4000,\n  \"paymentDueDay\": 5,\n  \"nationalId\": \"12345678901234\",\n  \"nationality\": \"مصري\",\n  \"isActive\": true\n}"
+                }
+            ]
+        },
+        {
+            "name": "Get Tenant By Id",
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+                },
+                "method": "GET",
+                "body": {},
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/Tenants/{{tenantId}}",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "Tenants", "{{tenantId}}"]
+                }
+            },
+            "response": [
+                {
+                    "name": "Example Response",
+                    "body": "{\n  \"id\": \"guid\",\n  \"fullName\": \"Aya Ahmed\",\n  \"email\": \"aya@example.com\",\n  \"phoneNumber\": \"01102782069\",\n  \"houseNumber\": \"A-15\",\n  \"contractNumber\": \"CNT-2024-001\",\n  \"contractStartDate\": \"2024-01-01T00:00:00\",\n  \"contractEndDate\": \"2025-01-01T00:00:00\",\n  \"monthlyRent\": 4000,\n  \"paymentDueDay\": 5,\n  \"nationalId\": \"12345678901234\",\n  \"nationality\": \"مصري\",\n  \"isActive\": true\n}"
+                }
+            ]
+        },
+        {
+            "name": "Update Tenant",
+            "description": "تحديث بيانات مستأجر",
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+                },
+                "method": "PUT",
+                "header": [],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"fullName\": \"Aya Ahmed Updated\",\n  \"phoneNumber\": \"01102782069\",\n  \"nationalId\": \"12345678901234\",\n  \"nationality\": \"مصري\",\n  \"houseId\": \"{{houseId}}\",\n  \"contractNumber\": \"CNT-2024-001\",\n  \"contractStartDate\": \"2024-01-01T00:00:00\",\n  \"contractEndDate\": \"2025-06-01T00:00:00\",\n  \"monthlyRent\": 4500,\n  \"paymentDueDay\": 10,\n  \"isActive\": true\n}",
+                    "options": { "raw": { "language": "json" } }
+                },
+                "url": {
+                    "raw": "{{baseUrl}}/api/Tenants/{{tenantId}}",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "Tenants", "{{tenantId}}"]
+                }
+            }
+        },
+        {
+            "name": "Delete Tenant",
+            "description": "حذف مستأجر",
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/Tenants/{{tenantId}}",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "Tenants", "{{tenantId}}"]
+                }
+            }
+        },
+        {
+            "name": "Get All Houses",
+            "description": "قائمة المنازل/الفلل المسجلة",
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+                },
+                "method": "GET",
+                "body": {},
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/house",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "house"]
+                }
+            },
+            "response": [
+                {
+                    "name": "Example Response",
+                    "body": "[{\n  \"id\": \"guid\",\n  \"contractNumber\": \"CNT-2024-001\",\n  \"contractStartDate\": \"2024-01-01T00:00:00\",\n  \"contractEndDate\": \"2025-01-01T00:00:00\",\n  \"houseNumber\": \"A-15\",\n  \"buildingNumber\": \"B3\",\n  \"floorNumber\": 3,\n  \"area\": 120,\n  \"roomsCount\": 3,\n  \"bathroomsCount\": 2,\n  \"hasGarage\": true,\n  \"hasGarden\": false,\n  \"notes\": \"\",\n  \"imageUrls\": [\"/uploads/house1.jpg\"],\n  \"userId\": \"guid\",\n  \"userDisplayName\": \"Aya Ahmed\",\n  \"userEmail\": \"aya@example.com\",\n  \"createdAt\": \"2024-01-01T00:00:00\"\n}]"
+                }
+            ]
+        },
+        {
+            "name": "Get All Complaints",
+            "description": "قائمة الشكاوى",
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+                },
+                "method": "GET",
+                "body": {},
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/Complaints",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "Complaints"]
+                }
+            },
+            "response": [
+                {
+                    "name": "Example Response",
+                    "body": "[{\n  \"id\": \"guid\",\n  \"title\": \"صوت عالي\",\n  \"description\": \"هناك ضوضاء مستمرة\",\n  \"villaNumber\": \"12\",\n  \"tenantName\": \"Aya Ahmed\",\n  \"category\": \"noise\",\n  \"status\": \"Pending\",\n  \"createdAt\": \"2024-01-15T10:30:00\",\n  \"reply\": null\n}]"
+                }
+            ]
+        },
+        {
+            "name": "Get All Maintenance",
+            "description": "قائمة طلبات الصيانة - with optional ?category= & ?description= query params",
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+                },
+                "method": "GET",
+                "body": {},
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/Maintenance",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "Maintenance"],
+                    "query": [
+                        { "key": "category", "value": "", "disabled": true },
+                        { "key": "description", "value": "", "disabled": true }
+                    ]
+                }
+            },
+            "response": [
+                {
+                    "name": "Example Response",
+                    "body": "[{\n  \"id\": \"guid\",\n  \"category\": \"كهرباء\",\n  \"description\": \"لمبة مكسورة في الممر\",\n  \"status\": \"Pending\",\n  \"adminNotes\": null,\n  \"createdAt\": \"2024-01-15T10:30:00\",\n  \"cost\": 150,\n  \"villaNumber\": \"12\",\n  \"tenantName\": \"Aya Ahmed\"\n}]"
+                }
+            ]
+        },
+        {
+            "name": "Get All Payments",
+            "description": "قائمة المدفوعات",
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+                },
+                "method": "GET",
+                "body": {},
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/Payments",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "Payments"]
+                }
+            },
+            "response": [
+                {
+                    "name": "Example Response",
+                    "body": "[{\n  \"id\": \"guid\",\n  \"tenantName\": \"Aya Ahmed\",\n  \"villaNumber\": \"A-15\",\n  \"amount\": 4000,\n  \"month\": \"يناير\",\n  \"year\": 2024,\n  \"status\": \"Paid\",\n  \"paymentDate\": \"2024-01-05T00:00:00\",\n  \"paymentMethod\": \"cash\"\n}]"
+                }
+            ]
+        },
+        {
+            "name": "Get Financial Report",
+            "description": "التقرير المالي للرسم البياني للرئيسية",
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+                },
+                "method": "GET",
+                "body": {},
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/Reports/financial",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "Reports", "financial"]
+                }
+            },
+            "response": [
+                {
+                    "name": "Example Response",
+                    "body": "{\n  \"monthlyRevenue\": 120000,\n  \"yearlyRevenue\": 1440000,\n  \"totalRevenue\": 5000000\n}"
+                }
+            ]
+        },
+        {
+            "name": "Get Announcements",
+            "description": "قائمة الإعلانات",
+            "request": {
+                "auth": {
+                    "type": "bearer",
+                    "bearer": [{ "key": "token", "value": "{{auth_token}}", "type": "string" }]
+                },
+                "method": "GET",
+                "body": {},
+                "header": [],
+                "url": {
+                    "raw": "{{baseUrl}}/api/Announcements",
+                    "host": ["{{baseUrl}}"],
+                    "path": ["api", "Announcements"]
+                }
+            },
+            "response": [
+                {
+                    "name": "Example Response",
+                    "body": "[\n  {\n    \"id\": \"guid\",\n    \"title\": \"صيانة المصعد\",\n    \"description\": \"سيتم إيقاف المصعد يوم الجمعة\",\n    \"imageUrls\": [\"/uploads/ann1.jpg\"],\n    \"createdAt\": \"2024-01-15T10:30:00\"\n  }\n]"
+                }
+            ]
+        }
+    ],
+    "variable": [
+        { "key": "baseUrl", "value": "https://azhar.runasp.net" },
+        { "key": "auth_token", "value": "eyJ..." }
+    ]
+}

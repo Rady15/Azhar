@@ -15,10 +15,10 @@ import Payments from './components/Payments'
 import Ads from './components/Ads'
 import Reports from './components/Reports'
 import Bookings from './components/Bookings'
-import ApiDocs from './components/ApiDocs'
 import Facilities from './components/Facilities'
+import Staff from './components/Staff'
 
-type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'apiDocs'
+type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'staff'
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -88,8 +88,8 @@ function App() {
         return <Facilities language={language} />
       case 'bookings':
         return <Bookings language={language} />
-      case 'apiDocs':
-        return <ApiDocs language={language} />
+      case 'staff':
+        return <Staff language={language} />
       default:
         return null
     }

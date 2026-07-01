@@ -130,6 +130,107 @@ async function formDataRequest<T>(method: string, path: string, data: Record<str
 }
 
 // Interfaces matching the C# backend models
+export interface DashboardStats {
+  collectionRate?: number;
+  collectionRatePercent?: number;
+  pendingComplaints?: number;
+  complaintsCount?: number;
+  activeMaintenance?: number;
+  pendingMaintenance?: number;
+  maintenanceRequestsCount?: number;
+  totalTenants?: number;
+  tenantsCount?: number;
+  activeTenants?: number;
+  totalHouses?: number;
+  housesCount?: number;
+  monthlyRevenue?: number;
+  yearlyRevenue?: number;
+}
+
+export interface AnnouncementModel {
+  id?: string;
+  announcementId?: string;
+  title: string;
+  description?: string;
+  content?: string;
+  image?: string;
+  imageUrl?: string;
+  images?: string[];
+  imageUrls?: string[];
+  announcementDate?: string;
+  createdAt?: string;
+  type?: string;
+}
+
+export interface ComplaintModel {
+  id?: string;
+  title?: string;
+  description?: string;
+  details?: string;
+  villaNumber?: string;
+  houseNumber?: string;
+  tenantName?: string;
+  category?: string;
+  status?: string;
+  createdAt?: string;
+  resolvedAt?: string;
+  reply?: string;
+  adminReply?: string;
+  images?: string[];
+}
+
+export interface PaymentModel {
+  id?: string;
+  tenantName?: string;
+  fullName?: string;
+  villaNumber?: string;
+  houseNumber?: string;
+  amount?: number;
+  month?: string;
+  year?: number;
+  status?: string;
+  paymentDate?: string;
+  createdAt?: string;
+  paymentMethod?: string;
+}
+
+export interface MaintenanceReport {
+  totalRequests?: number;
+  total?: number;
+  pendingRequests?: number;
+  pending?: number;
+  inProgressRequests?: number;
+  inProgress?: number;
+  completedRequests?: number;
+  completed?: number;
+  totalCost?: number;
+  averageCost?: number;
+}
+
+export interface FinancialReport {
+  monthlyRevenue?: number;
+  monthly?: number;
+  yearlyRevenue?: number;
+  yearly?: number;
+  totalRevenue?: number;
+  totalPayments?: number;
+  totalAmount?: number;
+  paidAmount?: number;
+  totalPaid?: number;
+  pendingAmount?: number;
+  totalPending?: number;
+  collectionRate?: number;
+  growth?: number;
+  revenueGrowth?: number;
+  totalTenants?: number;
+  activeTenants?: number;
+  inactiveTenants?: number;
+  totalVillas?: number;
+  availableVillas?: number;
+  occupiedVillas?: number;
+  maintenanceVillas?: number;
+}
+
 export interface LoginResponse {
   token: string;
   email?: string;
@@ -144,20 +245,35 @@ export interface TenantModel {
   phoneNumber: string;
   houseNumber: string;
   contractNumber: string;
+  contractStartDate?: string;
   contractEndDate: string;
+  monthlyRent?: number;
+  paymentDueDay?: number;
+  nationalId?: string;
+  nationality?: string;
+  houseId?: string;
   isActive?: boolean;
 }
 
 export interface MaintenanceModel {
   id: string;
-  category: string;
+  requestNumber?: string;
+  title?: string;
+  category?: string;
   description: string;
-  status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
+  priority?: string;
+  status: string;
   adminNotes?: string;
   createdAt?: string;
   cost?: number;
   villaNumber?: string;
+  houseNumber?: string;
   tenantName?: string;
+  images?: string[];
+  assignedToId?: string;
+  assignedToName?: string;
+  rating?: number;
+  ratingComment?: string;
 }
 
 export interface BookingModel {
@@ -183,6 +299,17 @@ export interface FacilityModel {
   image?: string;
 }
 
+export interface StaffModel {
+  id?: string;
+  fullName: string;
+  email: string;
+  phoneNumber?: string;
+  profileImageUrl?: string | null;
+  isActive?: boolean;
+  pendingTasksCount?: number;
+  completedTasksCount?: number;
+}
+
 export interface BookingRequest {
   facilityId: string;
   bookingDate: string;
@@ -193,9 +320,9 @@ export interface BookingRequest {
 
 export interface HouseModel {
   id?: string;
-  contractNumber: string;
+  contractNumber?: string;
   contractStartDate?: string;
-  contractEndDate: string;
+  contractEndDate?: string;
   houseNumber: string;
   buildingNumber: string;
   floorNumber: number;
@@ -244,7 +371,7 @@ export const api = {
     return request<TenantModel[]>('GET', '/api/Tenants', email ? { email } : undefined);
   },
 
-  async createTenant(tenant: TenantModel): Promise<TenantModel> {
+  async createTenant(tenant: Record<string, any>): Promise<TenantModel> {
     return request<TenantModel>('POST', '/api/Tenants', tenant);
   },
 
@@ -252,15 +379,15 @@ export const api = {
     return request<TenantModel>('GET', `/api/Tenants/${id}`);
   },
 
-  async updateTenant(id: string, tenant: Omit<TenantModel, 'email' | 'password'> & { isActive: boolean }): Promise<TenantModel> {
+  async updateTenant(id: string, tenant: Record<string, any>): Promise<TenantModel> {
     return request<TenantModel>('PUT', `/api/Tenants/${id}`, tenant);
   },
 
-  async deleteTenant(id: string, tenantData: TenantModel): Promise<any> {
+  async deleteTenant(id: string, tenantData: Record<string, any>): Promise<any> {
     return request<any>('DELETE', `/api/Tenants/${id}`, tenantData);
   },
 
-  async toggleActiveTenant(id: string, tenantData: TenantModel): Promise<any> {
+  async toggleActiveTenant(id: string, tenantData: Record<string, any>): Promise<any> {
     return request<any>('PUT', `/api/Tenants/${id}/toggle-active`, tenantData);
   },
 
@@ -269,8 +396,20 @@ export const api = {
     return request<MaintenanceModel[]>('GET', '/api/Maintenance', filter);
   },
 
+  async createMaintenance(data: Record<string, any>): Promise<MaintenanceModel> {
+    return request<MaintenanceModel>('POST', '/api/Maintenance', data);
+  },
+
   async updateMaintenanceStatus(id: string, statusData: { status: string; adminNotes: string }): Promise<any> {
     return request<any>('PUT', `/api/Maintenance/${id}/status`, statusData);
+  },
+
+  async updateMaintenance(id: string, data: Record<string, any>): Promise<MaintenanceModel> {
+    return request<MaintenanceModel>('PUT', `/api/Maintenance/${id}`, data);
+  },
+
+  async deleteMaintenance(id: string): Promise<any> {
+    return request<any>('DELETE', `/api/Maintenance/${id}`);
   },
 
   // Facilities API
@@ -291,6 +430,10 @@ export const api = {
     return formDataRequest<FacilityModel>('POST', '/api/Facilities', facility as unknown as Record<string, any>);
   },
 
+  async updateFacility(id: string, data: Record<string, any>): Promise<FacilityModel> {
+    return formDataRequest<FacilityModel>('PUT', `/api/Facilities/${id}`, data);
+  },
+
   async deleteFacility(id: string, emailData: { email: string }): Promise<any> {
     return formDataRequest<any>('DELETE', `/api/Facilities/${id}`, emailData);
   },
@@ -308,21 +451,21 @@ export const api = {
   },
 
   // Dashboard API
-  async getDashboardStats(): Promise<any> {
-    return request<any>('GET', '/api/Dashboard');
+  async getDashboardStats(): Promise<DashboardStats> {
+    return request<DashboardStats>('GET', '/api/Dashboard');
   },
 
   // Announcements API
-  async getAnnouncements(): Promise<any[]> {
-    return request<any[]>('GET', '/api/Announcements');
+  async getAnnouncements(): Promise<AnnouncementModel[]> {
+    return request<AnnouncementModel[]>('GET', '/api/Announcements');
   },
 
-  async createAnnouncement(announcement: Record<string, any>): Promise<any> {
-    return formDataRequest<any>('POST', '/api/Announcements', announcement);
+  async createAnnouncement(announcement: Record<string, any>): Promise<AnnouncementModel> {
+    return formDataRequest<AnnouncementModel>('POST', '/api/Announcements', announcement);
   },
 
-  async updateAnnouncement(id: string, announcement: Record<string, any>): Promise<any> {
-    return formDataRequest<any>('PATCH', `/api/Announcements/${id}`, announcement);
+  async updateAnnouncement(id: string, announcement: Record<string, any>): Promise<AnnouncementModel> {
+    return formDataRequest<AnnouncementModel>('PATCH', `/api/Announcements/${id}`, announcement);
   },
 
   async deleteAnnouncement(id: string, data?: Record<string, any>): Promise<any> {
@@ -333,20 +476,24 @@ export const api = {
   },
 
   // Complaints API
-  async getComplaints(): Promise<any[]> {
-    return request<any[]>('GET', '/api/Complaints');
+  async getComplaints(): Promise<ComplaintModel[]> {
+    return request<ComplaintModel[]>('GET', '/api/Complaints');
   },
 
-  async replyComplaint(id: string, replyData: { reply: string; status: string }): Promise<any> {
-    return request<any>('PUT', `/api/Complaints/${id}/reply`, replyData);
+  async replyComplaint(id: string, replyData: Record<string, any>): Promise<any> {
+    return request<any>('PUT', `/api/Complaints/${id}/reply`, { dto: replyData });
   },
 
-  async createComplaint(data: Record<string, any>): Promise<any> {
-    return formDataRequest<any>('POST', '/api/Complaints', data);
+  async createComplaint(data: Record<string, any>): Promise<ComplaintModel> {
+    return formDataRequest<ComplaintModel>('POST', '/api/Complaints', data);
   },
 
-  async getMyComplaints(): Promise<any[]> {
-    return request<any[]>('GET', '/api/Complaints/my-complaints');
+  async deleteComplaint(id: string): Promise<any> {
+    return request<any>('DELETE', `/api/Complaints/${id}`);
+  },
+
+  async getMyComplaints(): Promise<ComplaintModel[]> {
+    return request<ComplaintModel[]>('GET', '/api/Complaints/my-complaints');
   },
 
   // Villas API (uses Houses endpoint with form-data)
@@ -354,8 +501,8 @@ export const api = {
     return request<HouseModel[]>('GET', '/api/house');
   },
 
-  async createVilla(userId: string, villa: HouseModel): Promise<HouseModel> {
-    return formDataRequest<HouseModel>('POST', `/api/house/user/${userId}`, villa as unknown as Record<string, any>);
+  async createVilla(villa: HouseModel): Promise<HouseModel> {
+    return formDataRequest<HouseModel>('POST', '/api/house', villa as unknown as Record<string, any>);
   },
 
   async updateVilla(id: string, villa: HouseModel): Promise<HouseModel> {
@@ -367,24 +514,41 @@ export const api = {
   },
 
   // Payments API
-  async getPayments(): Promise<any[]> {
-    return request<any[]>('GET', '/api/Payments');
+  async getPayments(): Promise<PaymentModel[]> {
+    return request<PaymentModel[]>('GET', '/api/Payments');
   },
 
-  async createPayment(payment: any): Promise<any> {
-    return request<any>('POST', '/api/Payments', payment);
+  async createPayment(payment: PaymentModel): Promise<PaymentModel> {
+    return request<PaymentModel>('POST', '/api/Payments', payment);
   },
 
   async updatePaymentStatus(id: string, statusData: { status: string }): Promise<any> {
     return request<any>('PUT', `/api/Payments/${id}/status`, statusData);
   },
 
-  // Reports API
-  async getFinancialReport(): Promise<any> {
-    return request<any>('GET', '/api/Reports/financial');
+  // Staff API
+  async getStaff(): Promise<StaffModel[]> {
+    return request<StaffModel[]>('GET', '/api/Staff');
   },
 
-  async getMaintenanceReport(): Promise<any> {
-    return request<any>('GET', '/api/Reports/maintenance');
+  async createStaff(staff: Record<string, any>): Promise<StaffModel> {
+    return request<StaffModel>('POST', '/api/Staff', staff);
+  },
+
+  async updateStaff(id: string, staff: Record<string, any>): Promise<StaffModel> {
+    return request<StaffModel>('PUT', `/api/Staff/${id}`, staff);
+  },
+
+  async deleteStaff(id: string): Promise<any> {
+    return request<any>('DELETE', `/api/Staff/${id}`);
+  },
+
+  // Reports API
+  async getFinancialReport(): Promise<FinancialReport> {
+    return request<FinancialReport>('GET', '/api/Reports/financial');
+  },
+
+  async getMaintenanceReport(): Promise<MaintenanceReport> {
+    return request<MaintenanceReport>('GET', '/api/Reports/maintenance');
   }
 };

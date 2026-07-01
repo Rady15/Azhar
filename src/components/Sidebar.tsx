@@ -8,11 +8,11 @@ import {
   Megaphone, 
   FileBarChart,
   CalendarCheck,
-  Terminal,
-  Building2
+  Building2,
+  Briefcase
 } from 'lucide-react'
 
-type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'apiDocs'
+type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'staff'
 
 interface SidebarProps {
   activeTab: TabType
@@ -31,7 +31,7 @@ const tabLabels: Record<TabType, { AR: string; EN: string }> = {
   reports: { AR: 'التقارير', EN: 'Reports' },
   facilities: { AR: 'إدارة المرافق', EN: 'Communal Facilities' },
   bookings: { AR: 'حجوزات المرافق', EN: 'Facility Bookings' },
-  apiDocs: { AR: 'مركز المطورين', EN: 'Developer Hub' },
+  staff: { AR: 'فريق العمل', EN: 'Staff' }
 }
 
 const navItems: { icon: typeof LayoutDashboard; tab: TabType }[] = [
@@ -45,7 +45,7 @@ const navItems: { icon: typeof LayoutDashboard; tab: TabType }[] = [
   { icon: FileBarChart, tab: 'reports' },
   { icon: Building2, tab: 'facilities' },
   { icon: CalendarCheck, tab: 'bookings' },
-  { icon: Terminal, tab: 'apiDocs' },
+  { icon: Briefcase, tab: 'staff' },
 ]
 
 function Sidebar({ activeTab, setActiveTab, language }: SidebarProps) {

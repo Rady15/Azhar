@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { Zap, Droplets, Wind, Wrench, AlertTriangle } from 'lucide-react'
-import { api } from '../services/api'
+import { api, MaintenanceModel } from '../services/api'
 
 const CATEGORY_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   كهرباء: { label: 'كهرباء', color: '#16a34a', icon: Zap },
@@ -14,8 +14,16 @@ const CATEGORY_CONFIG: Record<string, { label: string; color: string; icon: any 
   general: { label: 'أخرى', color: '#94a3b8', icon: AlertTriangle },
 }
 
+interface ChartItem {
+  name: string
+  value: number
+  percentage: number
+  color: string
+  icon: any
+}
+
 function MaintenanceChart() {
-  const [chartData, setChartData] = useState<{ name: string; value: number; percentage: number; color: string; icon: any }[]>([])
+  const [chartData, setChartData] = useState<ChartItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
 
@@ -23,10 +31,10 @@ function MaintenanceChart() {
     async function fetchData() {
       try {
         const data = await api.getMaintenance()
-        const list = Array.isArray(data) ? data : (data as any)?.maintenances ?? (data as any)?.data ?? []
+        const list: MaintenanceModel[] = Array.isArray(data) ? data : (data as any)?.maintenances ?? (data as any)?.data ?? []
 
         const buckets: Record<string, number> = {}
-        list.forEach((item: any) => {
+        list.forEach((item: MaintenanceModel) => {
           const cat = item.category || 'general'
           const key = Object.keys(CATEGORY_CONFIG).find(k => cat.toLowerCase().includes(k.toLowerCase())) || 'general'
           buckets[key] = (buckets[key] || 0) + 1
@@ -35,7 +43,7 @@ function MaintenanceChart() {
         const totalCount = Object.values(buckets).reduce((s, v) => s + v, 0)
         setTotal(totalCount)
 
-        const chart = Object.entries(buckets).map(([key, value]) => {
+        const chart: ChartItem[] = Object.entries(buckets).map(([key, value]) => {
           const config = CATEGORY_CONFIG[key] || CATEGORY_CONFIG.general
           return {
             name: config.label,

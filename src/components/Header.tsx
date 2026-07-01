@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Search, Bell, Globe, ChevronDown, LogOut, Users, Home, Wrench, AlertCircle, CreditCard, Megaphone, FileBarChart, CalendarCheck } from 'lucide-react'
+import { Search, Bell, Globe, ChevronDown, LogOut, Users, Home, Wrench, AlertCircle, CreditCard, Megaphone, FileBarChart, CalendarCheck, Building2, Briefcase } from 'lucide-react'
 
 interface Notification {
   id: number
@@ -48,6 +48,8 @@ function Header({ language, setLanguage, notifications, showNotifications, setSh
     { id: 'reports', label: language === 'AR' ? 'التقارير' : 'Reports', icon: FileBarChart, category: language === 'AR' ? 'أقسام' : 'Sections' },
     { id: 'bookings', label: language === 'AR' ? 'حجوزات المرافق' : 'Facility Bookings', icon: CalendarCheck, category: language === 'AR' ? 'أقسام' : 'Sections' },
     { id: 'bookings-add', label: language === 'AR' ? 'إضافة حجز' : 'Add Booking', icon: CalendarCheck, category: language === 'AR' ? 'إجراءات' : 'Actions' },
+    { id: 'facilities', label: language === 'AR' ? 'المرافق' : 'Facilities', icon: Building2, category: language === 'AR' ? 'أقسام' : 'Sections' },
+    { id: 'staff', label: language === 'AR' ? 'فريق العمل' : 'Staff', icon: Briefcase, category: language === 'AR' ? 'أقسام' : 'Sections' },
     { id: 'dashboard', label: language === 'AR' ? 'الرئيسية' : 'Dashboard', icon: Home, category: language === 'AR' ? 'أقسام' : 'Sections' },
   ], [language])
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, User, Phone, Home, Calendar, Loader2, Hash } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, X, User, Phone, Home, Calendar, Loader2, Hash, Flag, DollarSign, CreditCard, FileText, LayoutList, Grid3X3 } from 'lucide-react'
 import { api } from '../services/api'
 
 interface Tenant {
@@ -9,9 +9,20 @@ interface Tenant {
   password?: string
   phoneNumber: string
   houseNumber: string
+  houseId: string
   contractNumber: string
+  contractStartDate: string
   contractEndDate: string
+  monthlyRent: number
+  paymentDueDay: number
+  nationalId: string
+  nationality: string
   isActive: boolean
+}
+
+interface HouseOption {
+  id: string
+  houseNumber: string
 }
 
 interface TenantsProps {
@@ -27,7 +38,9 @@ function Tenants({ language }: TenantsProps) {
   const [showViewModal, setShowViewModal] = useState(false)
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
   const [viewingTenant, setViewingTenant] = useState<Tenant | null>(null)
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [formData, setFormData] = useState<Partial<Tenant>>({})
+  const [houses, setHouses] = useState<HouseOption[]>([])
 
   const mapToFrontend = (item: any): Tenant => ({
     id: item.id || String(Date.now()),
@@ -35,22 +48,49 @@ function Tenants({ language }: TenantsProps) {
     email: item.email || '',
     phoneNumber: item.phoneNumber || '',
     houseNumber: item.houseNumber || '',
+    houseId: item.houseId || '',
     contractNumber: item.contractNumber || '',
+    contractStartDate: item.contractStartDate ? item.contractStartDate.split('T')[0] : '',
     contractEndDate: item.contractEndDate ? item.contractEndDate.split('T')[0] : '',
+    monthlyRent: item.monthlyRent ?? 0,
+    paymentDueDay: item.paymentDueDay ?? 1,
+    nationalId: item.nationalId || '',
+    nationality: item.nationality || '',
     isActive: item.isActive !== false
   })
 
-  const mapToBackend = (tenant: Partial<Tenant>): any => ({
+  const mapToBackend = (tenant: Partial<Tenant>): Record<string, any> => ({
     fullName: (tenant.fullName || '').replace(/\s+/g, ''),
     email: tenant.email || '',
     userName: (tenant.email || '').split('@')[0].replace(/[^a-zA-Z0-9]/g, ''),
     password: tenant.password || 'Default@123',
     phoneNumber: tenant.phoneNumber || '',
+    houseId: tenant.houseId || '',
     houseNumber: tenant.houseNumber || '',
     contractNumber: tenant.contractNumber || '',
+    contractStartDate: tenant.contractStartDate ? new Date(tenant.contractStartDate).toISOString() : new Date().toISOString(),
     contractEndDate: tenant.contractEndDate ? new Date(tenant.contractEndDate).toISOString() : new Date().toISOString(),
+    monthlyRent: tenant.monthlyRent ?? 0,
+    paymentDueDay: tenant.paymentDueDay ?? 1,
+    nationalId: tenant.nationalId || '',
+    nationality: tenant.nationality || '',
     isActive: tenant.isActive ?? true
   })
+
+  const fetchHouses = async () => {
+    try {
+      const data = await api.getVillas()
+      let list: any[] = []
+      if (Array.isArray(data)) {
+        list = data
+      } else if (data && Array.isArray((data as any).houses)) {
+        list = (data as any).houses
+      }
+      setHouses(list.map((h: any) => ({ id: h.id || h.houseNumber, houseNumber: h.houseNumber })))
+    } catch {
+      setHouses([])
+    }
+  }
 
   const fetchTenants = async () => {
     setLoading(true)
@@ -73,17 +113,25 @@ function Tenants({ language }: TenantsProps) {
 
   useEffect(() => {
     fetchTenants()
+    fetchHouses()
   }, [])
 
   const handleAdd = () => {
     setEditingTenant(null)
-    setFormData({ fullName: '', email: '', password: '', phoneNumber: '', houseNumber: '', contractNumber: '', contractEndDate: '', isActive: true })
+    setFormData({
+      fullName: '', email: '', password: '', phoneNumber: '',
+      houseId: '', houseNumber: '', contractNumber: '', contractStartDate: '', contractEndDate: '',
+      monthlyRent: 0, paymentDueDay: 1, nationalId: '', nationality: '',
+      isActive: true
+    })
+    fetchHouses()
     setShowModal(true)
   }
 
   const handleEdit = (tenant: Tenant) => {
     setEditingTenant(tenant)
     setFormData({ ...tenant, password: '' })
+    fetchHouses()
     setShowModal(true)
   }
 
@@ -158,12 +206,17 @@ function Tenants({ language }: TenantsProps) {
         </div>
       )}
 
+      <div className="flex items-center gap-1 mb-4">
+        <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-primary-100 text-primary-700' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`} title={t('عرض كقائمة', 'List view')}><LayoutList className="w-4 h-4" /></button>
+        <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-primary-100 text-primary-700' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`} title={t('عرض كبطاقات', 'Grid view')}><Grid3X3 className="w-4 h-4" /></button>
+      </div>
+
       {loading && tenants.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12">
           <Loader2 className="w-8 h-8 text-primary-600 animate-spin mb-2" />
           <p className="text-slate-500 text-sm">{t('جاري تحميل البيانات...', 'Loading tenants...')}</p>
         </div>
-      ) : (
+      ) : viewMode === 'list' ? (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -171,7 +224,9 @@ function Tenants({ language }: TenantsProps) {
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الاسم', 'Name')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الهاتف', 'Phone')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('المنزل', 'House')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الجنسية', 'Nationality')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('العقد', 'Contract')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الإيجار', 'Rent')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الحالة', 'Status')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الإجراءات', 'Actions')}</th>
               </tr>
@@ -182,27 +237,21 @@ function Tenants({ language }: TenantsProps) {
                   <td className="py-3 px-4 text-slate-700">{tenant.fullName}</td>
                   <td className="py-3 px-4 text-slate-700">{tenant.phoneNumber}</td>
                   <td className="py-3 px-4 text-slate-700">{tenant.houseNumber}</td>
+                  <td className="py-3 px-4 text-slate-700">{tenant.nationality || '—'}</td>
                   <td className="py-3 px-4 text-slate-700">{tenant.contractNumber}</td>
+                  <td className="py-3 px-4 text-slate-700">
+                    {tenant.monthlyRent ? `${tenant.monthlyRent.toLocaleString()} ${t('ج.م', 'EGP')}` : '—'}
+                  </td>
                   <td className="py-3 px-4">
-                    <button
-                      onClick={() => handleToggleActive(tenant)}
-                      className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${tenant.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
-                      title={t('اضغط لتغيير الحالة', 'Click to toggle status')}
-                    >
+                    <button onClick={() => handleToggleActive(tenant)} className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${tenant.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`} title={t('اضغط لتغيير الحالة', 'Click to toggle status')}>
                       {tenant.isActive ? t('نشط', 'Active') : t('غير نشط', 'Inactive')}
                     </button>
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => handleView(tenant)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title={t('عرض', 'View')}>
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleEdit(tenant)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg" title={t('تعديل', 'Edit')}>
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleDelete(tenant.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title={t('حذف', 'Delete')}>
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <button onClick={() => handleView(tenant)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title={t('عرض', 'View')}><Eye className="w-4 h-4" /></button>
+                      <button onClick={() => handleEdit(tenant)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg" title={t('تعديل', 'Edit')}><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(tenant.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title={t('حذف', 'Delete')}><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -210,11 +259,43 @@ function Tenants({ language }: TenantsProps) {
             </tbody>
           </table>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {tenants.map(tenant => (
+            <div key={tenant.id} className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-lg transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-primary-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-slate-800 truncate">{tenant.fullName}</p>
+                  <p className="text-xs text-slate-400">{tenant.email}</p>
+                </div>
+              </div>
+              <div className="space-y-2 text-sm text-slate-600 mb-3">
+                <div className="flex justify-between"><span className="text-slate-400">{t('المنزل', 'House')}</span><span>{tenant.houseNumber}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">{t('الجنسية', 'Nationality')}</span><span>{tenant.nationality || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">{t('العقد', 'Contract')}</span><span>{tenant.contractNumber}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">{t('الإيجار', 'Rent')}</span><span className="font-medium">{tenant.monthlyRent ? `${tenant.monthlyRent.toLocaleString()} ${t('ج.م', 'EGP')}` : '—'}</span></div>
+              </div>
+              <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                <button onClick={() => handleToggleActive(tenant)} className={`px-2.5 py-1 rounded-full text-xs font-semibold ${tenant.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {tenant.isActive ? t('نشط', 'Active') : t('غير نشط', 'Inactive')}
+                </button>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => handleView(tenant)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => handleEdit(tenant)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"><Edit className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => handleDelete(tenant.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-slate-800">
                 {editingTenant ? t('تعديل مستأجر', 'Edit Tenant') : t('إضافة مستأجر', 'Add Tenant')}
@@ -244,17 +325,55 @@ function Tenants({ language }: TenantsProps) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('رقم المنزل', 'House Number')} *</label>
-                  <input type="text" value={formData.houseNumber || ''} onChange={e => setFormData({ ...formData, houseNumber: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('رقم الهوية', 'National ID')}</label>
+                  <input type="text" value={formData.nationalId || ''} onChange={e => setFormData({ ...formData, nationalId: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('الجنسية', 'Nationality')}</label>
+                  <input type="text" value={formData.nationality || ''} onChange={e => setFormData({ ...formData, nationality: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('المنزل', 'House')} *</label>
+                  <select
+                    value={formData.houseId || ''}
+                    onChange={e => {
+                      const selected = houses.find(h => h.id === e.target.value)
+                      setFormData({ ...formData, houseId: e.target.value, houseNumber: selected?.houseNumber || '' })
+                    }}
+                    className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm"
+                  >
+                    <option value="">-- {t('اختر منزل', 'Select House')} --</option>
+                    {houses.map(h => (
+                      <option key={h.id} value={h.id}>{h.houseNumber}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('رقم العقد', 'Contract Number')} *</label>
                   <input type="text" value={formData.contractNumber || ''} onChange={e => setFormData({ ...formData, contractNumber: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('تاريخ انتهاء العقد', 'Contract End Date')} *</label>
-                <input type="date" value={formData.contractEndDate || ''} onChange={e => setFormData({ ...formData, contractEndDate: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('تاريخ بداية العقد', 'Contract Start')}</label>
+                  <input type="date" value={formData.contractStartDate || ''} onChange={e => setFormData({ ...formData, contractStartDate: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('تاريخ انتهاء العقد', 'Contract End')} *</label>
+                  <input type="date" value={formData.contractEndDate || ''} onChange={e => setFormData({ ...formData, contractEndDate: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('الإيجار الشهري', 'Monthly Rent')}</label>
+                  <input type="number" value={formData.monthlyRent || ''} onChange={e => setFormData({ ...formData, monthlyRent: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('يوم الاستحقاق', 'Payment Due Day')}</label>
+                  <input type="number" min="1" max="31" value={formData.paymentDueDay || ''} onChange={e => setFormData({ ...formData, paymentDueDay: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('الحالة', 'Status')}</label>
@@ -278,7 +397,7 @@ function Tenants({ language }: TenantsProps) {
 
       {showViewModal && viewingTenant && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-slate-800">{t('بيانات المستأجر', 'Tenant Details')}</h3>
               <button onClick={() => setShowViewModal(false)} className="text-slate-400 hover:text-slate-600">
@@ -308,10 +427,45 @@ function Tenants({ language }: TenantsProps) {
                   <Hash className="w-4 h-4 text-slate-400" />
                   <span className="text-sm text-slate-600">{t('عقد', 'Contract')}: {viewingTenant.contractNumber}</span>
                 </div>
+                {viewingTenant.nationalId && (
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">{t('هوية', 'ID')}: {viewingTenant.nationalId}</span>
+                  </div>
+                )}
+                {viewingTenant.nationality && (
+                  <div className="flex items-center gap-2">
+                    <Flag className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">{t('جنسية', 'Nationality')}: {viewingTenant.nationality}</span>
+                  </div>
+                )}
+                {viewingTenant.contractStartDate && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">{t('بداية', 'Start')}: {viewingTenant.contractStartDate}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-slate-400" />
-                  <span className="text-sm text-slate-600">{viewingTenant.contractEndDate}</span>
+                  <span className="text-sm text-slate-600">{t('نهاية', 'End')}: {viewingTenant.contractEndDate}</span>
                 </div>
+                {viewingTenant.monthlyRent > 0 && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">{t('إيجار', 'Rent')}: {viewingTenant.monthlyRent.toLocaleString()} {t('ج.م', 'EGP')}</span>
+                  </div>
+                )}
+                {viewingTenant.paymentDueDay > 0 && (
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">{t('يوم الدفع', 'Due Day')}: {viewingTenant.paymentDueDay}</span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${viewingTenant.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {viewingTenant.isActive ? t('نشط', 'Active') : t('غير نشط', 'Inactive')}
+                </span>
               </div>
             </div>
             <button onClick={() => setShowViewModal(false)} className="w-full h-10 mt-4 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200">

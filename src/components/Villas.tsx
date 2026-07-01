@@ -1,12 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, Home, Maximize, Bed, Bath, Upload, Loader2, Building, Hash, Check, Square, FileText, Calendar } from 'lucide-react'
-import { api, HouseModel, TenantModel, API_BASE_URL } from '../services/api'
+import { Plus, Edit, Trash2, Eye, X, Home, Maximize, Bed, Bath, Upload, Loader2, Building, Hash, Check, Square, Clock, LayoutList, Grid3X3 } from 'lucide-react'
+import { api, HouseModel, API_BASE_URL } from '../services/api'
 
 interface Villa {
   id: string | number
-  contractNumber: string
-  contractStartDate?: string
-  contractEndDate: string
   houseNumber: string
   buildingNumber: string
   floorNumber: number
@@ -17,7 +14,7 @@ interface Villa {
   hasGarden?: boolean
   notes?: string
   images?: string[]
-  userId?: string
+  createdAt?: string
 }
 
 interface VillasProps {
@@ -27,6 +24,7 @@ interface VillasProps {
 function Villas({ language }: VillasProps) {
   const [villas, setVillas] = useState<Villa[]>([])
   const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   const [showModal, setShowModal] = useState(false)
@@ -37,16 +35,13 @@ function Villas({ language }: VillasProps) {
   const [imagePreview, setImagePreview] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [tenants, setTenants] = useState<TenantModel[]>([])
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid')
 
   const resolveImage = (url: string) =>
     url?.startsWith('http') ? url : `${API_BASE_URL}${url}`
 
   const mapToFrontend = (item: HouseModel): Villa => ({
     id: item.id || String(Date.now()),
-    contractNumber: item.contractNumber || '',
-    contractStartDate: item.contractStartDate || '',
-    contractEndDate: item.contractEndDate || '',
     houseNumber: item.houseNumber || '',
     buildingNumber: item.buildingNumber || '',
     floorNumber: item.floorNumber || 0,
@@ -56,13 +51,11 @@ function Villas({ language }: VillasProps) {
     hasGarage: item.hasGarage || false,
     hasGarden: item.hasGarden || false,
     notes: item.notes || '',
-    images: (item.imageUrls || item.images || []).map(resolveImage)
+    images: (item.imageUrls || item.images || []).map(resolveImage),
+    createdAt: item.createdAt || ''
   })
 
   const mapToBackend = (villa: Partial<Villa>): HouseModel => ({
-    contractNumber: villa.contractNumber || '',
-    contractStartDate: villa.contractStartDate || new Date().toISOString(),
-    contractEndDate: villa.contractEndDate || new Date().toISOString(),
     houseNumber: villa.houseNumber || '',
     buildingNumber: villa.buildingNumber || '',
     floorNumber: villa.floorNumber ?? 0,
@@ -111,28 +104,14 @@ function Villas({ language }: VillasProps) {
     setFormData({
       houseNumber: '', buildingNumber: '', floorNumber: 0,
       area: 0, roomsCount: 0, bathroomsCount: 0,
-      contractNumber: '', contractStartDate: '', contractEndDate: '',
-      hasGarage: false, hasGarden: false, notes: '', images: [],
-      userId: ''
+      hasGarage: false, hasGarden: false, notes: '', images: []
     })
     setImagePreview('')
     setImageFile(null)
-    try {
-      const data = await api.getTenants()
-      if (Array.isArray(data)) {
-        setTenants(data)
-      } else if (data && Array.isArray((data as any).tenants)) {
-        setTenants((data as any).tenants)
-      } else {
-        setTenants([])
-      }
-    } catch {
-      setTenants([])
-    }
     setShowModal(true)
   }
 
-  const handleEdit = (villa: Villa) => {
+  const handleEdit = async (villa: Villa) => {
     setEditingVilla(villa)
     setFormData({ ...villa })
     setImagePreview(villa.images?.[0] || '')
@@ -151,25 +130,22 @@ function Villas({ language }: VillasProps) {
         const villa = villas.find(v => v.id === id)
         await api.deleteVilla(String(id), villa ? mapToBackend(villa) : {} as HouseModel)
         setVillas(villas.filter(v => v.id !== id))
-    } catch (err: any) {
-      console.error('Delete villa error:', err)
-      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
-    }
+      } catch (err: any) {
+        console.error('Delete villa error:', err)
+        alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+      }
     }
   }
 
   const handleSave = async () => {
+    setSaving(true)
     try {
       const payload = buildSavePayload(formData)
       if (editingVilla) {
         await api.updateVilla(String(editingVilla.id), payload as any)
         setVillas(villas.map(v => v.id === editingVilla.id ? { ...v, ...formData } as Villa : v))
       } else {
-        if (!formData.userId) {
-          alert(language === 'AR' ? 'يرجى اختيار مستأجر' : 'Please select a tenant')
-          return
-        }
-        const newVillaBackend = await api.createVilla(formData.userId, payload as any)
+        const newVillaBackend = await api.createVilla(payload as any)
         const newVilla = mapToFrontend(newVillaBackend)
         setVillas([...villas, newVilla])
       }
@@ -177,6 +153,8 @@ function Villas({ language }: VillasProps) {
     } catch (err: any) {
       console.error('Save villa error:', err)
       alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -201,10 +179,16 @@ function Villas({ language }: VillasProps) {
     <div className="bg-white rounded-2xl p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-slate-800">{t('المنازل', 'Houses')}</h2>
-        <button onClick={handleAdd} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors">
-          <Plus className="w-4 h-4" />
-          {t('إضافة منزل', 'Add House')}
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 ml-2 border border-slate-200 rounded-lg p-0.5">
+            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-primary-100 text-primary-700' : 'text-slate-400 hover:text-slate-600'}`} title={t('عرض كقائمة', 'List view')}><LayoutList className="w-4 h-4" /></button>
+            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-primary-100 text-primary-700' : 'text-slate-400 hover:text-slate-600'}`} title={t('عرض كبطاقات', 'Grid view')}><Grid3X3 className="w-4 h-4" /></button>
+          </div>
+          <button onClick={handleAdd} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors">
+            <Plus className="w-4 h-4" />
+            {t('إضافة منزل', 'Add House')}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -224,6 +208,44 @@ function Villas({ language }: VillasProps) {
           <Home className="w-12 h-12 mb-2" />
           <p>{t('لا توجد منازل مسجلة', 'No houses registered')}</p>
         </div>
+      ) : viewMode === 'list' ? (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-200">
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('رقم المنزل', 'House No.')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('المبنى', 'Building')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الدور', 'Floor')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('المساحة', 'Area')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('غرف', 'Rooms')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('حمامات', 'Baths')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الإجراءات', 'Actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {villas.map(villa => (
+                <tr key={villa.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  <td className="py-3 px-4 text-slate-700 font-medium">{villa.houseNumber}</td>
+                  <td className="py-3 px-4 text-slate-600">{villa.buildingNumber}</td>
+                  <td className="py-3 px-4 text-slate-600">{villa.floorNumber}</td>
+                  <td className="py-3 px-4 text-slate-600">{villa.area} m²</td>
+                  <td className="py-3 px-4 text-slate-600">{villa.roomsCount}</td>
+                  <td className="py-3 px-4 text-slate-600">{villa.bathroomsCount}</td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleView(villa)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-4 h-4" /></button>
+                      <button onClick={() => handleEdit(villa)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(villa.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {villas.length === 0 && (
+                <tr><td colSpan={7} className="text-center py-12 text-slate-400">{t('لا توجد منازل مسجلة', 'No houses registered')}</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {villas.map(villa => (
@@ -239,24 +261,20 @@ function Villas({ language }: VillasProps) {
               </div>
               <div className="p-4">
                 <h3 className="font-bold text-slate-800 mb-2">{t('منزل', 'House')} {villa.houseNumber}</h3>
-                <div className="space-y-1 text-sm text-slate-500 mb-3">
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4" />
-                    <span>{t('مبنى', 'Bldg')} {villa.buildingNumber} - {t('دور', 'Floor')} {villa.floorNumber}</span>
+                  <div className="space-y-1 text-sm text-slate-500 mb-3">
+                    <div className="flex items-center gap-2">
+                      <Building className="w-4 h-4" />
+                      <span>{t('مبنى', 'Bldg')} {villa.buildingNumber} - {t('دور', 'Floor')} {villa.floorNumber}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Maximize className="w-4 h-4" />
+                      <span>{villa.area} {t('م²', 'm²')}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="flex items-center gap-1"><Bed className="w-4 h-4" /> {villa.roomsCount}</span>
+                      <span className="flex items-center gap-1"><Bath className="w-4 h-4" /> {villa.bathroomsCount}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Hash className="w-4 h-4" />
-                    <span>{t('عقد', 'Contract')}: {villa.contractNumber}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Maximize className="w-4 h-4" />
-                    <span>{villa.area} {t('م²', 'm²')}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1"><Bed className="w-4 h-4" /> {villa.roomsCount}</span>
-                    <span className="flex items-center gap-1"><Bath className="w-4 h-4" /> {villa.bathroomsCount}</span>
-                  </div>
-                </div>
                 <div className="flex items-center justify-between">
                   <div className="flex gap-1">
                     <button onClick={() => handleView(villa)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg">
@@ -300,41 +318,12 @@ function Villas({ language }: VillasProps) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('رقم العقد', 'Contract Number')} *</label>
-                  <input type="text" value={formData.contractNumber || ''} onChange={e => setFormData({ ...formData, contractNumber: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
-                </div>
-                <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('الدور', 'Floor Number')} *</label>
                   <input type="number" value={formData.floorNumber ?? ''} onChange={e => setFormData({ ...formData, floorNumber: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('المساحة', 'Area')}</label>
                   <input type="number" value={formData.area || ''} onChange={e => setFormData({ ...formData, area: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('المستأجر', 'Tenant')} *</label>
-                  <select
-                    value={formData.userId || ''}
-                    onChange={e => setFormData({ ...formData, userId: e.target.value })}
-                    className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm"
-                  >
-                    <option value="">-- {t('اختر مستأجر', 'Select Tenant')} --</option>
-                    {tenants.map(tn => (
-                      <option key={tn.id} value={tn.id}>{tn.fullName} ({tn.email})</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('تاريخ بداية العقد', 'Contract Start')}</label>
-                  <input type="date" value={formData.contractStartDate ? formData.contractStartDate.split('T')[0] : ''} onChange={e => setFormData({ ...formData, contractStartDate: new Date(e.target.value).toISOString() })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('تاريخ انتهاء العقد', 'Contract End')}</label>
-                  <input type="date" value={formData.contractEndDate ? formData.contractEndDate.split('T')[0] : ''} onChange={e => setFormData({ ...formData, contractEndDate: new Date(e.target.value).toISOString() })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
@@ -386,10 +375,11 @@ function Villas({ language }: VillasProps) {
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={handleSave} className="flex-1 h-10 bg-primary-600 text-white rounded-xl hover:bg-primary-700">
-                {t('حفظ', 'Save')}
+              <button onClick={handleSave} disabled={saving} className="flex-1 h-10 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+                {saving ? t('جاري الحفظ...', 'Saving...') : t('حفظ', 'Save')}
               </button>
-              <button onClick={() => setShowModal(false)} className="flex-1 h-10 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200">
+              <button onClick={() => setShowModal(false)} disabled={saving} className="flex-1 h-10 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 disabled:opacity-50">
                 {t('إلغاء', 'Cancel')}
               </button>
             </div>
@@ -423,22 +413,6 @@ function Villas({ language }: VillasProps) {
                 <span>{viewingVilla.area} {t('م²', 'm²')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-slate-400" />
-                <span>{t('عقد', 'Contract')}: {viewingVilla.contractNumber}</span>
-              </div>
-              {viewingVilla.contractStartDate && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-slate-400" />
-                  <span>{t('بداية', 'Start')}: {viewingVilla.contractStartDate.split('T')[0]}</span>
-                </div>
-              )}
-              {viewingVilla.contractEndDate && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-slate-400" />
-                  <span>{t('نهاية', 'End')}: {viewingVilla.contractEndDate.split('T')[0]}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2">
                 <Bed className="w-4 h-4 text-slate-400" />
                 <span>{viewingVilla.roomsCount} {t('غرف', 'rooms')}</span>
               </div>
@@ -456,7 +430,13 @@ function Villas({ language }: VillasProps) {
               </div>
             </div>
             {viewingVilla.notes && (
-              <p className="mt-4 p-3 bg-slate-50 rounded-lg text-sm text-slate-600">{viewingVilla.notes}</p>
+              <p className="mt-3 p-3 bg-slate-50 rounded-lg text-sm text-slate-600">{viewingVilla.notes}</p>
+            )}
+            {viewingVilla.createdAt && (
+              <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
+                <Clock className="w-3 h-3" />
+                <span>{t('تم الإنشاء', 'Created')}: {new Date(viewingVilla.createdAt).toLocaleDateString()}</span>
+              </div>
             )}
             <button onClick={() => setShowViewModal(false)} className="w-full h-10 mt-4 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200">
               {t('إغلاق', 'Close')}

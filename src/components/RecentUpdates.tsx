@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Wrench, AlertCircle, ArrowLeft, Megaphone } from 'lucide-react'
-import { api } from '../services/api'
+import { api, AnnouncementModel, ComplaintModel, MaintenanceModel } from '../services/api'
 
 interface UpdateItem {
   id: string
@@ -24,6 +24,12 @@ function timeAgo(dateStr: string): string {
   return dateStr.split('T')[0]
 }
 
+function getList<T>(data: T[] | { data?: T[]; complaints?: T[]; maintenances?: T[] } | undefined): T[] {
+  if (!data) return []
+  if (Array.isArray(data)) return data
+  return data.data ?? data.complaints ?? data.maintenances ?? []
+}
+
 function RecentUpdates() {
   const [updates, setUpdates] = useState<UpdateItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,45 +46,45 @@ function RecentUpdates() {
         const items: UpdateItem[] = []
 
         if (announcements.status === 'fulfilled') {
-          const list = Array.isArray(announcements.value) ? announcements.value : []
-          list.forEach((a: any) => {
-            items.push({
-              id: `ann-${a.id ?? Date.now()}`,
-              icon: Megaphone,
-              color: 'bg-purple-50 text-purple-600',
-              title: a.title || 'إعلان',
-              description: a.description || '',
-              time: timeAgo(a.createdAt),
+          const list = announcements.value
+          if (Array.isArray(list)) {
+            list.forEach((a: AnnouncementModel) => {
+              items.push({
+                id: `ann-${a.id ?? a.announcementId ?? Date.now()}`,
+                icon: Megaphone,
+                color: 'bg-purple-50 text-purple-600',
+                title: a.title || 'إعلان',
+                description: a.description || a.content || '',
+                time: timeAgo(a.createdAt ?? ''),
+              })
             })
-          })
+          }
         }
 
         if (complaints.status === 'fulfilled') {
-          const c = complaints.value
-          const list = Array.isArray(c) ? c : (c as any)?.complaints ?? []
-          list.forEach((x: any) => {
+          const list = getList<ComplaintModel>(complaints.value as any)
+          list.forEach((x: ComplaintModel) => {
             items.push({
               id: `comp-${x.id ?? Date.now()}`,
               icon: AlertCircle,
               color: 'bg-red-50 text-red-600',
               title: x.title || 'شكوى جديدة',
               description: x.villaNumber ? `فيلا رقم ${x.villaNumber}` : '',
-              time: timeAgo(x.createdAt),
+              time: timeAgo(x.createdAt ?? ''),
             })
           })
         }
 
         if (maintenance.status === 'fulfilled') {
-          const m = maintenance.value
-          const list = Array.isArray(m) ? m : (m as any)?.maintenances ?? (m as any)?.data ?? []
-          list.forEach((x: any) => {
+          const list = getList<MaintenanceModel>(maintenance.value as any)
+          list.forEach((x: MaintenanceModel) => {
             items.push({
               id: `maint-${x.id ?? Date.now()}`,
               icon: Wrench,
               color: 'bg-amber-50 text-amber-600',
               title: x.category || 'طلب صيانة',
               description: x.villaNumber ? `وحدة ${x.villaNumber}` : '',
-              time: timeAgo(x.createdAt),
+              time: timeAgo(x.createdAt ?? ''),
             })
           })
         }

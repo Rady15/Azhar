@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, User, Home, Send } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, X, User, Home, Send, LayoutList, Grid3X3 } from 'lucide-react'
 import { api } from '../services/api'
 
 interface Payment {
@@ -26,6 +26,7 @@ function Payments({ language }: PaymentsProps) {
   const [showViewModal, setShowViewModal] = useState(false)
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null)
   const [viewingPayment, setViewingPayment] = useState<Payment | null>(null)
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [formData, setFormData] = useState<Partial<Payment>>({})
 
   // Map Backend API model to Frontend Payment UI model
@@ -149,39 +150,70 @@ function Payments({ language }: PaymentsProps) {
         <div className="p-4 bg-blue-50 rounded-xl"><p className="text-sm text-blue-600">{language === 'AR' ? 'الإجمالي' : 'Total'}</p><p className="text-xl font-bold text-blue-700">{totalPaid + totalPending} {language === 'AR' ? 'ريال' : 'SAR'}</p></div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-slate-200">
-              <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'المستأجر' : 'Tenant'}</th>
-              <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الفلا' : 'Villa'}</th>
-              <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'المبلغ' : 'Amount'}</th>
-              <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الشهر' : 'Month'}</th>
-              <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الحالة' : 'Status'}</th>
-              <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الإجراءات' : 'Actions'}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map(payment => (
-              <tr key={payment.id} className="border-b border-slate-100 hover:bg-slate-50">
-                <td className="py-3 px-4 text-slate-700">{payment.tenantName}</td>
-                <td className="py-3 px-4 text-slate-700">{payment.villaNumber}</td>
-                <td className="py-3 px-4 text-slate-700 font-medium">{payment.amount} {language === 'AR' ? 'ريال' : 'SAR'}</td>
-                <td className="py-3 px-4 text-slate-700">{payment.month} {payment.year}</td>
-                <td className="py-3 px-4">{getStatusBadge(payment.status)}</td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => handleView(payment)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-4 h-4" /></button>
-                    <button onClick={() => handleEdit(payment)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"><Edit className="w-4 h-4" /></button>
-                    <button onClick={() => handleSendReminder(payment)} className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg"><Send className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(payment.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex items-center gap-1 mb-4">
+        <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-primary-100 text-primary-700' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`} title={language === 'AR' ? 'عرض كقائمة' : 'List view'}><LayoutList className="w-4 h-4" /></button>
+        <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-primary-100 text-primary-700' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`} title={language === 'AR' ? 'عرض كبطاقات' : 'Grid view'}><Grid3X3 className="w-4 h-4" /></button>
       </div>
+
+      {viewMode === 'list' ? (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-200">
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'المستأجر' : 'Tenant'}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الفلا' : 'Villa'}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'المبلغ' : 'Amount'}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الشهر' : 'Month'}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الحالة' : 'Status'}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الإجراءات' : 'Actions'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payments.map(payment => (
+                <tr key={payment.id} className="border-b border-slate-100 hover:bg-slate-50">
+                  <td className="py-3 px-4 text-slate-700">{payment.tenantName}</td>
+                  <td className="py-3 px-4 text-slate-700">{payment.villaNumber}</td>
+                  <td className="py-3 px-4 text-slate-700 font-medium">{payment.amount} {language === 'AR' ? 'ريال' : 'SAR'}</td>
+                  <td className="py-3 px-4 text-slate-700">{payment.month} {payment.year}</td>
+                  <td className="py-3 px-4">{getStatusBadge(payment.status)}</td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleView(payment)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-4 h-4" /></button>
+                      <button onClick={() => handleEdit(payment)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => handleSendReminder(payment)} className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg"><Send className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(payment.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {payments.map(payment => (
+            <div key={payment.id} className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-lg transition-shadow">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="font-semibold text-slate-800">{payment.tenantName}</p>
+                  <p className="text-xs text-slate-400">{payment.villaNumber}</p>
+                </div>
+                {getStatusBadge(payment.status)}
+              </div>
+              <p className="text-2xl font-bold text-primary-700 mb-3">{payment.amount} {language === 'AR' ? 'ريال' : 'SAR'}</p>
+              <div className="space-y-2 text-sm text-slate-600 mb-3">
+                <div className="flex justify-between"><span className="text-slate-400">{language === 'AR' ? 'الشهر' : 'Month'}</span><span>{payment.month} {payment.year}</span></div>
+              </div>
+              <div className="flex items-center justify-end gap-1 pt-3 border-t border-slate-100">
+                <button onClick={() => handleView(payment)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-3.5 h-3.5" /></button>
+                <button onClick={() => handleEdit(payment)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"><Edit className="w-3.5 h-3.5" /></button>
+                <button onClick={() => handleSendReminder(payment)} className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-lg"><Send className="w-3.5 h-3.5" /></button>
+                <button onClick={() => handleDelete(payment.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

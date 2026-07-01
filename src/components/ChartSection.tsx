@@ -1,13 +1,24 @@
 import { useState, useEffect } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { api } from '../services/api'
+import { api, PaymentModel, FinancialReport } from '../services/api'
 
 const MONTHS_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
 
+function getPaymentsList(data: PaymentModel[] | { payments?: PaymentModel[] } | undefined): PaymentModel[] {
+  if (!data) return []
+  if (Array.isArray(data)) return data
+  return data.payments ?? []
+}
+
+interface ChartDataPoint {
+  month: string
+  value: number
+}
+
 function ChartSection() {
   const [period, setPeriod] = useState<'monthly' | 'yearly'>('monthly')
-  const [monthlyData, setMonthlyData] = useState<{ month: string; value: number }[]>([])
-  const [yearlyData, setYearlyData] = useState<{ month: string; value: number }[]>([])
+  const [monthlyData, setMonthlyData] = useState<ChartDataPoint[]>([])
+  const [yearlyData, setYearlyData] = useState<ChartDataPoint[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -22,8 +33,8 @@ function ChartSection() {
         const yearBuckets: Record<string, number> = {}
 
         if (payments.status === 'fulfilled') {
-          const list = Array.isArray(payments.value) ? payments.value : (payments.value as any)?.payments ?? []
-          list.forEach((p: any) => {
+          const list = getPaymentsList(payments.value as any)
+          list.forEach((p: PaymentModel) => {
             const amt = Number(p.amount) || 0
             const date = p.paymentDate || p.createdAt
             if (date) {
@@ -37,7 +48,7 @@ function ChartSection() {
         }
 
         if (report.status === 'fulfilled') {
-          const r = report.value
+          const r: FinancialReport = report.value
           if (r.monthlyRevenue || r.monthly) {
             const rev = Number(r.monthlyRevenue ?? r.monthly ?? 0)
             const currentMonth = new Date().getMonth()
@@ -50,8 +61,8 @@ function ChartSection() {
           }
         }
 
-        const months = MONTHS_AR.map((name, i) => ({ month: name, value: monthBuckets[i] || 0 }))
-        const years = Object.entries(yearBuckets)
+        const months: ChartDataPoint[] = MONTHS_AR.map((name, i) => ({ month: name, value: monthBuckets[i] || 0 }))
+        const years: ChartDataPoint[] = Object.entries(yearBuckets)
           .sort(([a], [b]) => Number(a) - Number(b))
           .map(([year, value]) => ({ month: year, value }))
 

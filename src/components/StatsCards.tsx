@@ -1,9 +1,23 @@
 import { useState, useEffect } from 'react'
 import { TrendingUp, AlertTriangle, Wrench, Users } from 'lucide-react'
-import { api } from '../services/api'
+import { api, DashboardStats, ComplaintModel, MaintenanceModel, TenantModel, HouseModel } from '../services/api'
+
+interface StatsData {
+  collectionRate: number
+  pendingComplaints: number
+  activeMaintenance: number
+  totalTenants: number
+  totalHouses: number
+}
+
+function getList<T>(data: T[] | { data?: T[]; houses?: T[]; tenants?: T[]; complaints?: T[]; maintenances?: T[] } | undefined): T[] {
+  if (!data) return []
+  if (Array.isArray(data)) return data
+  return data.data ?? data.houses ?? data.tenants ?? data.complaints ?? data.maintenances ?? []
+}
 
 function StatsCards() {
-  const [statsData, setStatsData] = useState({
+  const [statsData, setStatsData] = useState<StatsData>({
     collectionRate: 0,
     pendingComplaints: 0,
     activeMaintenance: 0,
@@ -24,48 +38,41 @@ function StatsCards() {
           api.getMaintenance(),
         ])
 
-        let collectionRate = 0
-        let pendingComplaints = 0
-        let activeMaintenance = 0
-        let totalTenants = 0
-        let totalHouses = 0
+        let data: StatsData = { collectionRate: 0, pendingComplaints: 0, activeMaintenance: 0, totalTenants: 0, totalHouses: 0 }
 
         if (dashboard.status === 'fulfilled') {
-          const d = dashboard.value
-          collectionRate = Number(d.collectionRate ?? d.collectionRatePercent ?? 0)
-          pendingComplaints = Number(d.pendingComplaints ?? d.complaintsCount ?? 0)
-          activeMaintenance = Number(d.activeMaintenance ?? d.pendingMaintenance ?? d.maintenanceRequestsCount ?? 0)
-          totalTenants = Number(d.totalTenants ?? d.tenantsCount ?? d.activeTenants ?? 0)
+          const d: DashboardStats = dashboard.value
+          data.collectionRate = Number(d.collectionRate ?? d.collectionRatePercent ?? 0)
+          data.pendingComplaints = Number(d.pendingComplaints ?? d.complaintsCount ?? 0)
+          data.activeMaintenance = Number(d.activeMaintenance ?? d.pendingMaintenance ?? d.maintenanceRequestsCount ?? 0)
+          data.totalTenants = Number(d.totalTenants ?? d.tenantsCount ?? d.activeTenants ?? 0)
+          data.totalHouses = Number(d.totalHouses ?? d.housesCount ?? 0)
         }
 
         if (tenants.status === 'fulfilled') {
-          const t = tenants.value
-          if (Array.isArray(t)) totalTenants = t.length
-          else if (t && (t as any).tenants) totalTenants = (t as any).tenants.length
+          data.totalTenants = data.totalTenants || getList<TenantModel>(tenants.value as any).length
         }
 
         if (houses.status === 'fulfilled') {
-          const h = houses.value
-          if (Array.isArray(h)) totalHouses = h.length
-          else if (h && (h as any).houses) totalHouses = (h as any).houses.length
+          data.totalHouses = data.totalHouses || getList<HouseModel>(houses.value as any).length
         }
 
         if (complaints.status === 'fulfilled') {
-          const c = complaints.value
-          if (Array.isArray(c)) pendingComplaints = c.filter((x: any) => (x.status?.toLowerCase() ?? 'pending').startsWith('pending') || x.status?.toLowerCase() === 'in_progress').length
-          else if (c && (c as any).complaints) pendingComplaints = (c as any).complaints.filter((x: any) => (x.status?.toLowerCase() ?? 'pending').startsWith('pending') || x.status?.toLowerCase() === 'in_progress').length
+          const list = getList<ComplaintModel>(complaints.value as any)
+          data.pendingComplaints = data.pendingComplaints || list.filter(x =>
+            (x.status?.toLowerCase() ?? 'pending').startsWith('pending') || x.status?.toLowerCase() === 'in_progress'
+          ).length
         }
 
         if (maintenance.status === 'fulfilled') {
-          const m = maintenance.value
-          const list = Array.isArray(m) ? m : (m as any)?.maintenances ?? (m as any)?.data ?? []
-          activeMaintenance = list.filter((x: any) => {
+          const list = getList<MaintenanceModel>(maintenance.value as any)
+          data.activeMaintenance = data.activeMaintenance || list.filter(x => {
             const s = (x.status ?? '').toLowerCase().replace(' ', '_')
             return s === 'pending' || s === 'in_progress'
           }).length
         }
 
-        setStatsData({ collectionRate, pendingComplaints, activeMaintenance, totalTenants, totalHouses })
+        setStatsData(data)
       } catch (err) {
         console.error('Failed to fetch dashboard stats:', err)
       } finally {

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { MapPin, BedDouble, Bath, Maximize, ArrowLeft, Building } from 'lucide-react'
-import { api, API_BASE_URL } from '../services/api'
+import { api, API_BASE_URL, HouseModel } from '../services/api'
 
 function PropertyCard() {
-  const [property, setProperty] = useState<any>(null)
+  const [property, setProperty] = useState<HouseModel | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -12,7 +12,7 @@ function PropertyCard() {
         const data = await api.getVillas()
         const list = Array.isArray(data) ? data : (data as any)?.houses ?? []
         if (list.length > 0) {
-          setProperty(list[list.length - 1])
+          setProperty(list[list.length - 1] as HouseModel)
         }
       } catch (err) {
         console.error('Failed to fetch property:', err)
@@ -80,19 +80,19 @@ function PropertyCard() {
         </p>
 
         <div className="flex items-center gap-4 mb-5">
-          {property.roomsCount > 0 && (
+          {(property.roomsCount ?? 0) > 0 && (
             <div className="flex items-center gap-1.5 text-slate-500">
               <BedDouble className="w-4 h-4" />
               <span className="text-xs">{property.roomsCount} غرف</span>
             </div>
           )}
-          {property.bathroomsCount > 0 && (
+          {(property.bathroomsCount ?? 0) > 0 && (
             <div className="flex items-center gap-1.5 text-slate-500">
               <Bath className="w-4 h-4" />
               <span className="text-xs">{property.bathroomsCount} حمامات</span>
             </div>
           )}
-          {property.area > 0 && (
+          {(property.area ?? 0) > 0 && (
             <div className="flex items-center gap-1.5 text-slate-500">
               <Maximize className="w-4 h-4" />
               <span className="text-xs">{property.area} م²</span>
