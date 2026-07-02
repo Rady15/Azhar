@@ -152,7 +152,10 @@ function Maintenance({ language }: MaintenanceProps) {
       }
 
       if (editingRequest) {
-        await api.updateMaintenance(String(editingRequest.id), payload)
+        await api.updateMaintenanceStatus(String(editingRequest.id), {
+          status: formData.status || 'Submitted',
+          adminNotes: formData.adminNotes || ''
+        })
         setRequests(requests.map(r => r.id === editingRequest.id ? { ...r, ...formData } as MaintenanceRequest : r))
       } else {
         const newBackend = await api.createMaintenance(payload)
