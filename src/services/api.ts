@@ -413,7 +413,7 @@ export const api = {
   },
 
   async updateMaintenanceStatus(id: string, statusData: Record<string, any>): Promise<any> {
-    return formDataRequest<any>('PUT', `/api/Maintenance/${id}/status`, statusData);
+    return request<any>('PUT', `/api/Maintenance/${id}/status`, statusData);
   },
 
   async updateMaintenance(id: string, data: Record<string, any>): Promise<MaintenanceModel> {
@@ -492,7 +492,7 @@ export const api = {
   },
 
   async replyComplaint(id: string, replyData: Record<string, any>): Promise<any> {
-    return formDataRequest<any>('PUT', `/api/Complaints/${id}/reply`, replyData);
+    return request<any>('PUT', `/api/Complaints/${id}/reply`, replyData);
   },
 
   async createComplaint(data: Record<string, any>): Promise<ComplaintModel> {
