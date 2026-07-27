@@ -18,6 +18,7 @@ interface SidebarProps {
   activeTab: TabType
   setActiveTab: (tab: TabType) => void
   language: 'AR' | 'EN'
+  userName?: string
 }
 
 const tabLabels: Record<TabType, { AR: string; EN: string }> = {
@@ -48,7 +49,7 @@ const navItems: { icon: typeof LayoutDashboard; tab: TabType }[] = [
   { icon: Briefcase, tab: 'staff' },
 ]
 
-function Sidebar({ activeTab, setActiveTab, language }: SidebarProps) {
+function Sidebar({ activeTab, setActiveTab, language, userName }: SidebarProps) {
   const getLabel = (tab: TabType) => tabLabels[tab][language]
   
   return (
@@ -79,7 +80,7 @@ function Sidebar({ activeTab, setActiveTab, language }: SidebarProps) {
             <span className="text-primary-700 font-bold text-xs">Admin</span>
           </div>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-slate-700">{language === 'AR' ? 'أحمد الغامدي' : 'Ahmed Al-Ghamdi'}</p>
+            <p className="text-sm font-semibold text-slate-700">{userName || 'Admin'}</p>
             <p className="text-xs text-slate-400">{language === 'AR' ? 'مدير النظام' : 'System Admin'}</p>
           </div>
         </div>

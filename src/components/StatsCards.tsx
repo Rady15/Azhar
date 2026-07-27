@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { TrendingUp, AlertTriangle, Wrench, Users } from 'lucide-react'
-import { api, DashboardStats, ComplaintModel, MaintenanceModel, TenantModel, HouseModel } from '../services/api'
+import { api, ComplaintModel, MaintenanceModel, TenantModel, HouseModel } from '../services/api'
 
 interface StatsData {
   collectionRate: number
@@ -41,12 +41,12 @@ function StatsCards() {
         let data: StatsData = { collectionRate: 0, pendingComplaints: 0, activeMaintenance: 0, totalTenants: 0, totalHouses: 0 }
 
         if (dashboard.status === 'fulfilled') {
-          const d: DashboardStats = dashboard.value
-          data.collectionRate = Number(d.collectionRate ?? d.collectionRatePercent ?? 0)
-          data.pendingComplaints = Number(d.pendingComplaints ?? d.complaintsCount ?? 0)
-          data.activeMaintenance = Number(d.activeMaintenance ?? d.pendingMaintenance ?? d.maintenanceRequestsCount ?? 0)
-          data.totalTenants = Number(d.totalTenants ?? d.tenantsCount ?? d.activeTenants ?? 0)
-          data.totalHouses = Number(d.totalHouses ?? d.housesCount ?? 0)
+          const d: any = dashboard.value
+          data.collectionRate = Number(d.collectionRate ?? d.CollectionRate ?? d.collectionRatePercent ?? d.CollectionRatePercent ?? 0)
+          data.pendingComplaints = Number(d.pendingComplaints ?? d.PendingComplaints ?? d.complaintsCount ?? d.ComplaintsCount ?? 0)
+          data.activeMaintenance = Number(d.activeMaintenance ?? d.ActiveMaintenance ?? d.pendingMaintenance ?? d.PendingMaintenance ?? d.maintenanceRequestsCount ?? d.MaintenanceRequestsCount ?? 0)
+          data.totalTenants = Number(d.totalTenants ?? d.TotalTenants ?? d.tenantsCount ?? d.TenantsCount ?? d.activeTenants ?? d.ActiveTenants ?? 0)
+          data.totalHouses = Number(d.totalHouses ?? d.TotalHouses ?? d.housesCount ?? d.HousesCount ?? 0)
         }
 
         if (tenants.status === 'fulfilled') {

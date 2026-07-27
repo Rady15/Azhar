@@ -19,7 +19,10 @@ function Login({ onLogin }: LoginProps) {
     setLoading(true)
 
     try {
-      await api.loginAdmin({ email: username, password })
+      const result = await api.loginAdmin({ email: username, password })
+      if (result.fullName) {
+        localStorage.setItem('azhar_name', result.fullName)
+      }
       onLogin(username)
     } catch (err: any) {
       console.error('Login error:', err)

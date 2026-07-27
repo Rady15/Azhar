@@ -19,6 +19,7 @@ interface HeaderProps {
   searchQuery: string
   setSearchQuery: (query: string) => void
   setActiveTab: (tab: any) => void
+  userName?: string
 }
 
 interface SearchResult {
@@ -28,7 +29,7 @@ interface SearchResult {
   category: string
 }
 
-function Header({ language, setLanguage, notifications, showNotifications, setShowNotifications, onLogout, searchQuery, setSearchQuery, setActiveTab }: HeaderProps) {
+function Header({ language, setLanguage, notifications, showNotifications, setShowNotifications, onLogout, searchQuery, setSearchQuery, setActiveTab, userName }: HeaderProps) {
   const unreadCount = notifications.filter(n => n.unread).length
   const [showSuggestions, setShowSuggestions] = useState(false)
 
@@ -157,7 +158,7 @@ function Header({ language, setLanguage, notifications, showNotifications, setSh
 
         <div className="flex items-center gap-3">
           <div className={language === 'AR' ? 'text-right' : 'text-left'}>
-            <p className="text-sm font-semibold text-slate-700">Ahmed Al-Ghamdi</p>
+            <p className="text-sm font-semibold text-slate-700">{userName || 'Admin'}</p>
             <p className="text-xs text-slate-400">{language === 'AR' ? 'مدير النظام' : 'Admin'}</p>
           </div>
           <div className="w-9 h-9 bg-primary-100 rounded-full flex items-center justify-center border-2 border-primary-200">

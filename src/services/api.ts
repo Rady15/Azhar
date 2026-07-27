@@ -132,19 +132,33 @@ async function formDataRequest<T>(method: string, path: string, data: Record<str
 // Interfaces matching the C# backend models
 export interface DashboardStats {
   collectionRate?: number;
+  CollectionRate?: number;
   collectionRatePercent?: number;
+  CollectionRatePercent?: number;
   pendingComplaints?: number;
+  PendingComplaints?: number;
   complaintsCount?: number;
+  ComplaintsCount?: number;
   activeMaintenance?: number;
+  ActiveMaintenance?: number;
   pendingMaintenance?: number;
+  PendingMaintenance?: number;
   maintenanceRequestsCount?: number;
+  MaintenanceRequestsCount?: number;
   totalTenants?: number;
+  TotalTenants?: number;
   tenantsCount?: number;
+  TenantsCount?: number;
   activeTenants?: number;
+  ActiveTenants?: number;
   totalHouses?: number;
+  TotalHouses?: number;
   housesCount?: number;
+  HousesCount?: number;
   monthlyRevenue?: number;
+  MonthlyRevenue?: number;
   yearlyRevenue?: number;
+  YearlyRevenue?: number;
 }
 
 export interface AnnouncementModel {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
 import StatsCards from './components/StatsCards'
@@ -17,6 +17,7 @@ import Reports from './components/Reports'
 import Bookings from './components/Bookings'
 import Facilities from './components/Facilities'
 import Staff from './components/Staff'
+import { api } from './services/api'
 
 type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'staff'
 
@@ -26,15 +27,46 @@ function App() {
   const [language, setLanguage] = useState<'AR' | 'EN'>('EN')
   const [showNotifications, setShowNotifications] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [userName, setUserName] = useState(localStorage.getItem('azhar_name') || localStorage.getItem('azhar_email') || 'Admin')
 
-  const notifications = [
-    { id: 1, title: 'صيانة طارئة', message: 'تسرب مياه في فيلا رقم 12', time: 'منذ 5 دقائق', unread: true },
-    { id: 2, title: 'دفعة جديدة', message: 'تم سداد إيجار فيلا رقم 8', time: 'منذ ساعة', unread: true },
-    { id: 3, title: 'شكوى جديدة', message: 'تم تقديم شكوى من المستأجر رقم 15', time: 'منذ ساعتين', unread: false },
-  ]
+  const [notifications, setNotifications] = useState<Array<{ id: number; title: string; message: string; time: string; unread: boolean }>>([])
+
+  useEffect(() => {
+    if (!isLoggedIn) return
+    Promise.allSettled([
+      api.getComplaints(),
+      api.getMaintenance(),
+      api.getAnnouncements()
+    ]).then(([complaintsRes, maintenanceRes, announcementsRes]) => {
+      const items: Array<{ id: number; title: string; message: string; time: string; unread: boolean }> = []
+      let id = 1
+
+      if (announcementsRes.status === 'fulfilled') {
+        const list = Array.isArray(announcementsRes.value) ? announcementsRes.value : []
+        list.slice(0, 3).forEach((a: any) => {
+          items.push({ id: id++, title: a.title || 'إعلان', message: a.description || a.content || '', time: a.createdAt || '', unread: true })
+        })
+      }
+      if (complaintsRes.status === 'fulfilled') {
+        const list = Array.isArray(complaintsRes.value) ? complaintsRes.value : (complaintsRes.value as any)?.data ?? []
+        list.slice(0, 3).forEach((c: any) => {
+          items.push({ id: id++, title: c.title || 'شكوى', message: c.description || `فيلا ${c.villaNumber || ''}`, time: c.createdAt || '', unread: true })
+        })
+      }
+      if (maintenanceRes.status === 'fulfilled') {
+        const list = Array.isArray(maintenanceRes.value) ? maintenanceRes.value : (maintenanceRes.value as any)?.data ?? []
+        list.slice(0, 3).forEach((m: any) => {
+          items.push({ id: id++, title: m.category || 'صيانة', message: m.description || `وحدة ${m.villaNumber || ''}`, time: m.createdAt || '', unread: true })
+        })
+      }
+
+      setNotifications(items.slice(0, 5))
+    })
+  }, [isLoggedIn])
 
   const handleLogin = (_username: string) => {
     setIsLoggedIn(true)
+    setUserName(localStorage.getItem('azhar_name') || localStorage.getItem('azhar_email') || _username || 'Admin')
   }
 
   const handleLogout = () => {
@@ -49,7 +81,7 @@ function App() {
           <>
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-slate-800 mb-1">
-                {language === 'AR' ? 'مرحباً بك، أحمد' : 'Welcome, Ahmed'}
+                {language === 'AR' ? `مرحباً بك، ${userName}` : `Welcome, ${userName}`}
               </h1>
               <p className="text-slate-500 text-sm">
                 {language === 'AR' ? 'نظرة عامة على حالة المجمع السكني لهذا اليوم' : 'Overview of the residential complex status for today'}
@@ -111,10 +143,11 @@ function App() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         setActiveTab={setActiveTab}
+        userName={userName}
       />
 
       <div className="flex">
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} language={language} />
+          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} language={language} userName={userName} />
 
           <main className={`flex-1 ${language === 'AR' ? 'mr-72' : 'ml-72'} p-6 pt-24`}>
             {renderContent()}
