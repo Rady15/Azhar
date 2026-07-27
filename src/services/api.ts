@@ -412,7 +412,7 @@ export const api = {
     return request<MaintenanceModel>('POST', '/api/Maintenance', data);
   },
 
-  async updateMaintenanceStatus(id: string, statusData: { status: string; adminNotes: string }): Promise<any> {
+  async updateMaintenanceStatus(id: string, statusData: { dto: { Status: number; AdminNotes: string } }): Promise<any> {
     return request<any>('PUT', `/api/Maintenance/${id}/status`, statusData);
   },
 
@@ -526,7 +526,7 @@ export const api = {
 
   // Payments API
   async getPayments(): Promise<PaymentModel[]> {
-    return request<PaymentModel[]>('GET', '/api/Payments');
+    return request<PaymentModel[]>('GET', '/api/Payments').catch(() => []);
   },
 
   async createPayment(payment: PaymentModel): Promise<PaymentModel> {
