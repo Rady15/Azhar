@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, CalendarCheck, User, Home, Clock, CheckCircle, Loader2, Mail, LayoutList, Grid3X3 } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, X, CalendarCheck, Users, Clock, CheckCircle, Loader2, LayoutList, Grid3X3 } from 'lucide-react'
 import { api, BookingModel, FacilityModel } from '../services/api'
 
 interface BookingsProps {
@@ -94,11 +94,11 @@ function Bookings({ language }: BookingsProps) {
   const openEdit = (booking: BookingModel) => {
     setEditingBooking(booking)
     setFormData({
-      facilityId: booking.facilityId || '',
-      bookingDate: booking.date || '',
-      startTime: booking.time || '',
-      endTime: '',
-      guestsCount: booking.duration || 1,
+      facilityId: '',
+      bookingDate: booking.bookingDate?.split('T')[0] || '',
+      startTime: booking.startTime || '',
+      endTime: booking.endTime || '',
+      guestsCount: booking.guestsCount || 1,
       status: booking.status || 'Pending'
     })
     setShowModal(true)
@@ -124,7 +124,7 @@ function Bookings({ language }: BookingsProps) {
     setSaving(true)
     try {
       if (editingBooking) {
-        await api.updateBookingStatus(editingBooking.id, { status: formData.status })
+        await api.updateBookingStatus(editingBooking.id, formData.status)
         setBookings(prev => prev.map(b => b.id === editingBooking.id ? { ...b, status: formData.status as 'Pending' | 'Confirmed' | 'Cancelled' } : b))
       } else {
         const created = await api.createBooking({
@@ -186,12 +186,10 @@ function Bookings({ language }: BookingsProps) {
             <thead>
               <tr className="border-b border-slate-200">
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'المرفق' : 'Facility'}</th>
-                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'المستأجر' : 'Tenant'}</th>
-                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'البريد' : 'Email'}</th>
-                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الفيلا' : 'Villa'}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'التاريخ' : 'Date'}</th>
-                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الوقت' : 'Time'}</th>
-                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'المدة' : 'Duration'}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'من' : 'From'}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'إلى' : 'To'}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الضيوف' : 'Guests'}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الحالة' : 'Status'}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الإجراءات' : 'Actions'}</th>
               </tr>
@@ -200,12 +198,10 @@ function Bookings({ language }: BookingsProps) {
               {bookings.map(booking => (
                 <tr key={booking.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="py-3 px-4 text-slate-700">{booking.facilityName}</td>
-                  <td className="py-3 px-4 text-slate-700">{booking.tenantName}</td>
-                  <td className="py-3 px-4 text-slate-500 text-xs">{booking.email}</td>
-                  <td className="py-3 px-4 text-slate-700">{booking.villaNumber}</td>
-                  <td className="py-3 px-4 text-slate-700">{booking.date ? booking.date.split('T')[0] : ''}</td>
-                  <td className="py-3 px-4 text-slate-700">{booking.time}</td>
-                  <td className="py-3 px-4 text-slate-700">{booking.duration}{language === 'AR' ? 'س' : 'h'}</td>
+                  <td className="py-3 px-4 text-slate-700">{booking.bookingDate ? booking.bookingDate.split('T')[0] : ''}</td>
+                  <td className="py-3 px-4 text-slate-700">{booking.startTime?.substring(0, 5)}</td>
+                  <td className="py-3 px-4 text-slate-700">{booking.endTime?.substring(0, 5)}</td>
+                  <td className="py-3 px-4 text-slate-700">{booking.guestsCount}</td>
                   <td className="py-3 px-4">{getStatusBadge(booking.status)}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
@@ -217,7 +213,7 @@ function Bookings({ language }: BookingsProps) {
                 </tr>
               ))}
               {bookings.length === 0 && (
-                <tr><td colSpan={9} className="text-center py-12 text-slate-400">{language === 'AR' ? 'لا توجد حجوزات' : 'No bookings found'}</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-slate-400">{language === 'AR' ? 'لا توجد حجوزات' : 'No bookings found'}</td></tr>
               )}
             </tbody>
           </table>
@@ -230,11 +226,13 @@ function Bookings({ language }: BookingsProps) {
                 <h3 className="font-semibold text-slate-800">{booking.facilityName}</h3>
                 {getStatusBadge(booking.status)}
               </div>
-              <p className="text-xs text-slate-400 mb-3">{booking.tenantName}</p>
+              {booking.facilityImage && (
+                <img src={booking.facilityImage} alt={booking.facilityName} className="w-full h-32 object-cover rounded-lg mb-3" />
+              )}
               <div className="space-y-2 text-sm text-slate-600 mb-3">
-                <div className="flex justify-between"><span className="text-slate-400">{language === 'AR' ? 'الفيلا' : 'Villa'}</span><span>{booking.villaNumber || '—'}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">{language === 'AR' ? 'التاريخ' : 'Date'}</span><span>{booking.date ? booking.date.split('T')[0] : '—'}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">{language === 'AR' ? 'الوقت' : 'Time'}</span><span>{booking.time} ({booking.duration}{language === 'AR' ? 'س' : 'h'})</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">{language === 'AR' ? 'التاريخ' : 'Date'}</span><span>{booking.bookingDate ? booking.bookingDate.split('T')[0] : '—'}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">{language === 'AR' ? 'الوقت' : 'Time'}</span><span>{booking.startTime?.substring(0, 5)} - {booking.endTime?.substring(0, 5)}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">{language === 'AR' ? 'الضيوف' : 'Guests'}</span><span>{booking.guestsCount}</span></div>
               </div>
               <div className="flex items-center justify-end gap-1 pt-3 border-t border-slate-100">
                 <button onClick={() => handleView(booking)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-3.5 h-3.5" /></button>
@@ -263,8 +261,8 @@ function Bookings({ language }: BookingsProps) {
               <div className="space-y-4">
                 <p className="text-sm text-slate-500">
                   {language === 'AR'
-                    ? `تغيير حالة الحجز لـ ${editingBooking.facilityName} - ${editingBooking.tenantName}`
-                    : `Change status for ${editingBooking.facilityName} - ${editingBooking.tenantName}`}
+                    ? `تغيير حالة حجز ${editingBooking.facilityName}`
+                    : `Change status for booking at ${editingBooking.facilityName}`}
                 </p>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{language === 'AR' ? 'الحالة' : 'Status'}</label>
@@ -340,13 +338,13 @@ function Bookings({ language }: BookingsProps) {
               <button onClick={() => setShowViewModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
             <div className="space-y-3">
+              {viewingBooking.facilityImage && (
+                <img src={viewingBooking.facilityImage} alt={viewingBooking.facilityName} className="w-full h-40 object-cover rounded-lg" />
+              )}
               <div className="flex items-center gap-2"><CalendarCheck className="w-4 h-4 text-primary-600" /><span className="text-sm font-medium">{viewingBooking.facilityName}</span></div>
-              <div className="flex items-center gap-2"><User className="w-4 h-4 text-slate-400" /><span className="text-sm">{viewingBooking.tenantName}</span></div>
-              {viewingBooking.email && <div className="flex items-center gap-2"><Mail className="w-4 h-4 text-slate-400" /><span className="text-sm">{viewingBooking.email}</span></div>}
-              <div className="flex items-center gap-2"><Home className="w-4 h-4 text-slate-400" /><span className="text-sm">{language === 'AR' ? 'فيلا رقم' : 'Villa'} {viewingBooking.villaNumber}</span></div>
-              <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-slate-400" /><span className="text-sm">{viewingBooking.date ? viewingBooking.date.split('T')[0] : ''} - {viewingBooking.time} ({viewingBooking.duration} {language === 'AR' ? 'ساعات' : 'hours'})</span></div>
+              <div className="flex items-center gap-2"><Clock className="w-4 h-4 text-slate-400" /><span className="text-sm">{viewingBooking.bookingDate?.split('T')[0]} | {viewingBooking.startTime?.substring(0, 5)} - {viewingBooking.endTime?.substring(0, 5)}</span></div>
+              <div className="flex items-center gap-2"><Users className="w-4 h-4 text-slate-400" /><span className="text-sm">{viewingBooking.guestsCount} {language === 'AR' ? 'ضيوف' : 'guests'}</span></div>
               <div className="mt-2">{getStatusBadge(viewingBooking.status)}</div>
-              {viewingBooking.notes && <p className="text-sm text-slate-600 p-3 bg-slate-50 rounded-lg">{viewingBooking.notes}</p>}
             </div>
             <button onClick={() => { setShowViewModal(false); openEdit(viewingBooking) }} className="w-full h-10 mt-3 bg-amber-600 text-white rounded-xl hover:bg-amber-700 flex items-center justify-center gap-2">
               <Edit className="w-3.5 h-3.5" />{language === 'AR' ? 'تغيير الحالة' : 'Change Status'}

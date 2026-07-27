@@ -278,16 +278,14 @@ export interface MaintenanceModel {
 
 export interface BookingModel {
   id: string;
-  facilityId?: string;
   facilityName: string;
-  tenantName: string;
-  email: string;
-  villaNumber?: string;
-  date: string;
-  time: string;
-  duration: number;
+  facilityImage?: string;
+  bookingDate: string;
+  startTime: string;
+  endTime: string;
+  guestsCount: number;
   status: 'Pending' | 'Confirmed' | 'Cancelled';
-  notes?: string;
+  createdAt?: string;
 }
 
 export interface FacilityModel {
@@ -421,9 +419,8 @@ export const api = {
     return request<BookingModel[]>('GET', '/api/Facilities/bookings', filter);
   },
 
-  async updateBookingStatus(id: string, statusData: string | { status?: string; email?: string }): Promise<any> {
-    const body = typeof statusData === 'string' ? { status: statusData } : statusData;
-    return request<any>('PUT', `/api/Facilities/bookings/${id}/status`, body);
+  async updateBookingStatus(id: string, status: string): Promise<any> {
+    return request<any>('PUT', `/api/Facilities/bookings/${id}/status`, status);
   },
 
   async createFacility(facility: FacilityModel): Promise<FacilityModel> {
