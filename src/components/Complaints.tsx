@@ -183,9 +183,9 @@ function Complaints({ language }: ComplaintsProps) {
     try {
       if (editingComplaint) {
         const payload: Record<string, any> = {
-          reply: formData.reply || editingComplaint.reply || 'Processed by admin',
-          adminReply: formData.adminReply || editingComplaint.adminReply || 'Processed by admin',
-          status: formData.status || editingComplaint.status
+          Reply: formData.reply || editingComplaint.reply || 'Processed by admin',
+          AdminReply: formData.adminReply || editingComplaint.adminReply || 'Processed by admin',
+          Status: formData.status || editingComplaint.status
         }
         if (imageFile) payload.images = [imageFile]
         await api.replyComplaint(String(editingComplaint.id), payload)
@@ -220,9 +220,9 @@ function Complaints({ language }: ComplaintsProps) {
     setSendingReply(true)
     try {
       await api.replyComplaint(viewingComplaint.id, {
-        reply: replyText || 'No reply',
-        adminReply: replyText || 'No reply',
-        status: replyStatus
+        Reply: replyText || 'No reply',
+        AdminReply: replyText || 'No reply',
+        Status: replyStatus
       })
       const updated = { ...viewingComplaint, reply: replyText, adminReply: replyText, status: replyStatus }
       setViewingComplaint(updated)
