@@ -78,7 +78,7 @@ async function formDataRequest<T>(method: string, path: string, data: Record<str
   const formData = new FormData();
   for (const key in data) {
     if (data[key] !== undefined && data[key] !== null) {
-      if (key === 'images' && Array.isArray(data[key])) {
+      if ((key === 'images' || key === 'Images') && Array.isArray(data[key])) {
         data[key].forEach((img: any) => {
           if (img instanceof File) {
             formData.append(key, img, img.name);
