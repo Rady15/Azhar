@@ -502,8 +502,8 @@ export const api = {
     return formDataRequest<HouseModel>('POST', '/api/house', villa as unknown as Record<string, any>);
   },
 
-  async updateVilla(id: string, villa: HouseModel): Promise<HouseModel> {
-    return formDataRequest<HouseModel>('PUT', `/api/house/${id}`, villa as unknown as Record<string, any>);
+  async updateVilla(id: string, villa: Record<string, any>): Promise<any> {
+    return formDataRequest<any>('PUT', `/api/house/${id}`, villa);
   },
 
   async deleteVilla(id: string, villa: HouseModel): Promise<any> {

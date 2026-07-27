@@ -70,15 +70,15 @@ function Villas({ language }: VillasProps) {
 
   const buildSavePayload = (villa: Partial<Villa>): Record<string, any> => {
     const base: Record<string, any> = {
-      HouseNumber: villa.houseNumber || '',
-      BuildingNumber: villa.buildingNumber || '',
-      FloorNumber: villa.floorNumber ?? 0,
-      Area: villa.area || 0,
-      RoomsCount: villa.roomsCount || 0,
-      BathroomsCount: villa.bathroomsCount || 0,
-      HasGarage: villa.hasGarage || false,
-      HasGarden: villa.hasGarden || false,
-      Notes: villa.notes || ''
+      houseNumber: villa.houseNumber || '',
+      buildingNumber: villa.buildingNumber || '',
+      floorNumber: villa.floorNumber ?? 0,
+      area: villa.area || 0,
+      roomsCount: villa.roomsCount || 0,
+      bathroomsCount: villa.bathroomsCount || 0,
+      hasGarage: villa.hasGarage || false,
+      hasGarden: villa.hasGarden || false,
+      notes: villa.notes || ''
     }
     if (imageFile) {
       base.Images = [imageFile]
