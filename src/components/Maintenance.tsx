@@ -154,10 +154,8 @@ function Maintenance({ language }: MaintenanceProps) {
       if (editingRequest) {
         const maintenanceStatusMap: Record<string, number> = { Submitted: 0, InProgress: 1, Completed: 2, Rejected: 3 }
         await api.updateMaintenanceStatus(String(editingRequest.id), {
-          dto: {
-            Status: maintenanceStatusMap[formData.status || 'Submitted'] ?? 0,
-            AdminNotes: formData.adminNotes || ''
-          }
+          Status: maintenanceStatusMap[formData.status || 'Submitted'] ?? 0,
+          AdminNotes: formData.adminNotes || ''
         })
         setRequests(requests.map(r => r.id === editingRequest.id ? { ...r, ...formData } as MaintenanceRequest : r))
       } else {

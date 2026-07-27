@@ -412,8 +412,8 @@ export const api = {
     return request<MaintenanceModel>('POST', '/api/Maintenance', data);
   },
 
-  async updateMaintenanceStatus(id: string, statusData: { dto: { Status: number; AdminNotes: string } }): Promise<any> {
-    return request<any>('PUT', `/api/Maintenance/${id}/status`, statusData);
+  async updateMaintenanceStatus(id: string, statusData: Record<string, any>): Promise<any> {
+    return formDataRequest<any>('PUT', `/api/Maintenance/${id}/status`, statusData);
   },
 
   async updateMaintenance(id: string, data: Record<string, any>): Promise<MaintenanceModel> {
@@ -492,7 +492,7 @@ export const api = {
   },
 
   async replyComplaint(id: string, replyData: Record<string, any>): Promise<any> {
-    return request<any>('PUT', `/api/Complaints/${id}/reply`, replyData);
+    return formDataRequest<any>('PUT', `/api/Complaints/${id}/reply`, replyData);
   },
 
   async createComplaint(data: Record<string, any>): Promise<ComplaintModel> {

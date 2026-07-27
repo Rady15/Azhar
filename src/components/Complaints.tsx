@@ -184,11 +184,9 @@ function Complaints({ language }: ComplaintsProps) {
       if (editingComplaint) {
         const complaintStatusMap: Record<string, number> = { Open: 0, InProgress: 1, Resolved: 2, Rejected: 3 }
         const payload: Record<string, any> = {
-          dto: {
-            Reply: formData.reply || editingComplaint.reply || 'Processed by admin',
-            AdminReply: formData.adminReply || editingComplaint.adminReply || 'Processed by admin',
-            Status: complaintStatusMap[formData.status || editingComplaint.status] ?? 2
-          }
+          Reply: formData.reply || editingComplaint.reply || 'Processed by admin',
+          AdminReply: formData.adminReply || editingComplaint.adminReply || 'Processed by admin',
+          Status: complaintStatusMap[formData.status || editingComplaint.status] ?? 2
         }
         if (imageFile) payload.images = [imageFile]
         await api.replyComplaint(String(editingComplaint.id), payload)
@@ -224,11 +222,9 @@ function Complaints({ language }: ComplaintsProps) {
     try {
       const complaintStatusMap: Record<string, number> = { Open: 0, InProgress: 1, Resolved: 2, Rejected: 3 }
       await api.replyComplaint(viewingComplaint.id, {
-        dto: {
-          Reply: replyText || 'No reply',
-          AdminReply: replyText || 'No reply',
-          Status: complaintStatusMap[replyStatus] ?? 2
-        }
+        Reply: replyText || 'No reply',
+        AdminReply: replyText || 'No reply',
+        Status: complaintStatusMap[replyStatus] ?? 2
       })
       const updated = { ...viewingComplaint, reply: replyText, adminReply: replyText, status: replyStatus }
       setViewingComplaint(updated)
