@@ -478,7 +478,7 @@ export const api = {
   },
 
   async replyComplaint(id: string, replyData: Record<string, any>): Promise<any> {
-    return request<any>('PUT', `/api/Complaints/${id}/reply`, { dto: replyData });
+    return request<any>('PUT', `/api/Complaints/${id}/reply`, replyData);
   },
 
   async createComplaint(data: Record<string, any>): Promise<ComplaintModel> {
