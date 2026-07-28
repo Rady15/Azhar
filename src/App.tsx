@@ -87,7 +87,7 @@ function App() {
                 {language === 'AR' ? 'نظرة عامة على حالة المجمع السكني لهذا اليوم' : 'Overview of the residential complex status for today'}
               </p>
             </div>
-            <StatsCards />
+            <StatsCards language={language} />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 mt-6">
               <div className="lg:col-span-2">
                 <ChartSection language={language} />

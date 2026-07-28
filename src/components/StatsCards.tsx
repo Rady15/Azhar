@@ -16,7 +16,12 @@ function getList<T>(data: T[] | { data?: T[]; houses?: T[]; tenants?: T[]; compl
   return data.data ?? data.houses ?? data.tenants ?? data.complaints ?? data.maintenances ?? []
 }
 
-function StatsCards() {
+interface StatsCardsProps {
+  language: 'AR' | 'EN'
+}
+
+function StatsCards({ language }: StatsCardsProps) {
+  const t = (ar: string, en: string) => language === 'AR' ? ar : en
   const [statsData, setStatsData] = useState<StatsData>({
     collectionRate: 0,
     pendingComplaints: 0,
@@ -84,9 +89,9 @@ function StatsCards() {
 
   const stats = [
     {
-      title: 'نسبة التحصيل',
+      title: t('نسبة التحصيل', 'Collection Rate'),
       value: loading ? '...' : `${statsData.collectionRate}%`,
-      subtext: 'ممتاز / Excellent',
+      subtext: t('ممتاز', 'Excellent'),
       icon: TrendingUp,
       bgColor: 'bg-primary-50',
       iconColor: 'text-primary-600',
@@ -94,27 +99,27 @@ function StatsCards() {
       progressColor: 'bg-primary-500',
     },
     {
-      title: 'الشكاوى المعلقة',
+      title: t('الشكاوى المعلقة', 'Pending Complaints'),
       value: loading ? '...' : String(statsData.pendingComplaints),
-      subtext: 'تحت المراجعة / Under Review',
+      subtext: t('تحت المراجعة', 'Under Review'),
       icon: AlertTriangle,
       bgColor: 'bg-amber-50',
       iconColor: 'text-amber-600',
       progress: null,
     },
     {
-      title: 'طلبات الصيانة',
+      title: t('طلبات الصيانة', 'Maintenance Requests'),
       value: loading ? '...' : String(statsData.activeMaintenance),
-      subtext: 'نشطة / Active',
+      subtext: t('نشطة', 'Active'),
       icon: Wrench,
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-600',
       progress: null,
     },
     {
-      title: 'إجمالي السكان',
+      title: t('إجمالي السكان', 'Total Residents'),
       value: loading ? '...' : String(statsData.totalTenants),
-      subtext: `${statsData.totalHouses} منزل / Houses`,
+      subtext: language === 'AR' ? `${statsData.totalHouses} منزل` : `${statsData.totalHouses} Houses`,
       icon: Users,
       bgColor: 'bg-emerald-50',
       iconColor: 'text-emerald-600',
