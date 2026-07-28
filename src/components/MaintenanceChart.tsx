@@ -3,15 +3,15 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { Zap, Droplets, Wind, Wrench, AlertTriangle } from 'lucide-react'
 import { api, MaintenanceModel } from '../services/api'
 
-const CATEGORY_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  كهرباء: { label: 'كهرباء', color: '#16a34a', icon: Zap },
-  كهربائية: { label: 'كهرباء', color: '#16a34a', icon: Zap },
-  سباكة: { label: 'سباكة', color: '#3b82f6', icon: Droplets },
-  مياه: { label: 'مياه', color: '#3b82f6', icon: Droplets },
-  تكييف: { label: 'تكييف', color: '#f59e0b', icon: Wind },
-  تصليح: { label: 'تصليح', color: '#8b5cf6', icon: Wrench },
-  صيانة: { label: 'صيانة', color: '#8b5cf6', icon: Wrench },
-  general: { label: 'أخرى', color: '#94a3b8', icon: AlertTriangle },
+const CATEGORY_CONFIG: Record<string, { labelAr: string; labelEn: string; color: string; icon: any }> = {
+  كهرباء: { labelAr: 'كهرباء', labelEn: 'Electricity', color: '#16a34a', icon: Zap },
+  كهربائية: { labelAr: 'كهرباء', labelEn: 'Electricity', color: '#16a34a', icon: Zap },
+  سباكة: { labelAr: 'سباكة', labelEn: 'Plumbing', color: '#3b82f6', icon: Droplets },
+  مياه: { labelAr: 'مياه', labelEn: 'Water', color: '#3b82f6', icon: Droplets },
+  تكييف: { labelAr: 'تكييف', labelEn: 'AC', color: '#f59e0b', icon: Wind },
+  تصليح: { labelAr: 'تصليح', labelEn: 'Repair', color: '#8b5cf6', icon: Wrench },
+  صيانة: { labelAr: 'صيانة', labelEn: 'Maintenance', color: '#8b5cf6', icon: Wrench },
+  general: { labelAr: 'أخرى', labelEn: 'Other', color: '#94a3b8', icon: AlertTriangle },
 }
 
 interface ChartItem {
@@ -22,7 +22,12 @@ interface ChartItem {
   icon: any
 }
 
-function MaintenanceChart() {
+interface MaintenanceChartProps {
+  language: 'AR' | 'EN'
+}
+
+function MaintenanceChart({ language }: MaintenanceChartProps) {
+  const t = (ar: string, en: string) => language === 'AR' ? ar : en
   const [chartData, setChartData] = useState<ChartItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -46,7 +51,7 @@ function MaintenanceChart() {
         const chart: ChartItem[] = Object.entries(buckets).map(([key, value]) => {
           const config = CATEGORY_CONFIG[key] || CATEGORY_CONFIG.general
           return {
-            name: config.label,
+            name: language === 'AR' ? config.labelAr : config.labelEn,
             value,
             percentage: totalCount > 0 ? Math.round((value / totalCount) * 100) : 0,
             color: config.color,
@@ -62,19 +67,19 @@ function MaintenanceChart() {
       }
     }
     fetchData()
-  }, [])
+  }, [language])
 
   return (
     <div className="bg-white rounded-2xl p-6 card-shadow border border-slate-100">
       <div className="mb-6">
-        <h3 className="text-lg font-bold text-slate-800">توزيع الصيانة</h3>
-        <p className="text-sm text-slate-400 mt-1">إجمالي الطلبات: {loading ? '...' : total}</p>
+        <h3 className="text-lg font-bold text-slate-800">{t('توزيع الصيانة', 'Maintenance Distribution')}</h3>
+        <p className="text-sm text-slate-400 mt-1">{t('إجمالي الطلبات:', 'Total requests:')} {loading ? '...' : total}</p>
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center h-40 text-slate-400 text-sm">جارٍ التحميل...</div>
+        <div className="flex items-center justify-center h-40 text-slate-400 text-sm">{t('جارٍ التحميل...', 'Loading...')}</div>
       ) : chartData.length === 0 ? (
-        <div className="flex items-center justify-center h-40 text-slate-400 text-sm">لا توجد طلبات صيانة</div>
+        <div className="flex items-center justify-center h-40 text-slate-400 text-sm">{t('لا توجد طلبات صيانة', 'No maintenance requests')}</div>
       ) : (
         <div className="flex items-center gap-6">
           <div className="relative w-40 h-40 flex-shrink-0">
@@ -85,13 +90,13 @@ function MaintenanceChart() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', fontSize: '13px', direction: 'rtl' }} formatter={(value: number, name: string) => [`${value} طلب`, name]} />
+                <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', fontSize: '13px', direction: language === 'AR' ? 'rtl' : 'ltr' }} formatter={(value: number, name: string) => [`${value} ${t('طلب', 'request')}`, name]} />
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <span className="text-2xl font-bold text-slate-800">{total}</span>
-                <p className="text-xs text-slate-400">طلب</p>
+                <p className="text-xs text-slate-400">{t('طلب', 'requests')}</p>
               </div>
             </div>
           </div>

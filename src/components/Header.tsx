@@ -162,7 +162,7 @@ function Header({ language, setLanguage, notifications, showNotifications, setSh
             <p className="text-xs text-slate-400">{language === 'AR' ? 'مدير النظام' : 'Admin'}</p>
           </div>
           <div className="w-9 h-9 bg-primary-100 rounded-full flex items-center justify-center border-2 border-primary-200">
-            <span className="text-primary-700 font-bold text-sm">أ.غ</span>
+            <span className="text-primary-700 font-bold text-sm">{userName ? userName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : 'AD'}</span>
           </div>
         </div>
       </div>

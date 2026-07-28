@@ -11,16 +11,29 @@ interface UpdateItem {
   time: string
 }
 
-function timeAgo(dateStr: string): string {
+interface RecentUpdatesProps {
+  language: 'AR' | 'EN'
+}
+
+function timeAgo(dateStr: string, lang: 'AR' | 'EN'): string {
   if (!dateStr) return ''
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'الآن'
-  if (mins < 60) return `منذ ${mins} دقيقة`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `منذ ${hours} ساعة`
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `منذ ${days} يوم`
+  if (lang === 'AR') {
+    if (mins < 1) return 'الآن'
+    if (mins < 60) return `منذ ${mins} دقيقة`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return `منذ ${hours} ساعة`
+    const days = Math.floor(hours / 24)
+    if (days < 30) return `منذ ${days} يوم`
+  } else {
+    if (mins < 1) return 'Just now'
+    if (mins < 60) return `${mins} min ago`
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return `${hours} hr ago`
+    const days = Math.floor(hours / 24)
+    if (days < 30) return `${days} day ago`
+  }
   return dateStr.split('T')[0]
 }
 
@@ -30,7 +43,8 @@ function getList<T>(data: T[] | { data?: T[]; complaints?: T[]; maintenances?: T
   return data.data ?? data.complaints ?? data.maintenances ?? []
 }
 
-function RecentUpdates() {
+function RecentUpdates({ language }: RecentUpdatesProps) {
+  const t = (ar: string, en: string) => language === 'AR' ? ar : en
   const [updates, setUpdates] = useState<UpdateItem[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -53,9 +67,9 @@ function RecentUpdates() {
                 id: `ann-${a.id ?? a.announcementId ?? Date.now()}`,
                 icon: Megaphone,
                 color: 'bg-purple-50 text-purple-600',
-                title: a.title || 'إعلان',
+                title: a.title || t('إعلان', 'Announcement'),
                 description: a.description || a.content || '',
-                time: timeAgo(a.createdAt ?? ''),
+                time: timeAgo(a.createdAt ?? '', language),
               })
             })
           }
@@ -68,9 +82,9 @@ function RecentUpdates() {
               id: `comp-${x.id ?? Date.now()}`,
               icon: AlertCircle,
               color: 'bg-red-50 text-red-600',
-              title: x.title || 'شكوى جديدة',
-              description: x.villaNumber ? `فيلا رقم ${x.villaNumber}` : '',
-              time: timeAgo(x.createdAt ?? ''),
+              title: x.title || t('شكوى جديدة', 'New Complaint'),
+              description: x.villaNumber ? t(`فيلا رقم ${x.villaNumber}`, `Villa ${x.villaNumber}`) : '',
+              time: timeAgo(x.createdAt ?? '', language),
             })
           })
         }
@@ -82,16 +96,17 @@ function RecentUpdates() {
               id: `maint-${x.id ?? Date.now()}`,
               icon: Wrench,
               color: 'bg-amber-50 text-amber-600',
-              title: x.category || 'طلب صيانة',
-              description: x.villaNumber ? `وحدة ${x.villaNumber}` : '',
-              time: timeAgo(x.createdAt ?? ''),
+              title: x.category || t('طلب صيانة', 'Maintenance Request'),
+              description: x.villaNumber ? t(`وحدة ${x.villaNumber}`, `Unit ${x.villaNumber}`) : '',
+              time: timeAgo(x.createdAt ?? '', language),
             })
           })
         }
 
         items.sort((a, b) => {
-          const aTime = a.time.includes('منذ') ? 0 : 1
-          const bTime = b.time.includes('منذ') ? 0 : 1
+          const isArabic = language === 'AR'
+          const aTime = a.time.includes(isArabic ? 'منذ' : 'ago') ? 0 : 1
+          const bTime = b.time.includes(isArabic ? 'منذ' : 'ago') ? 0 : 1
           return aTime - bTime
         })
 
@@ -103,19 +118,19 @@ function RecentUpdates() {
       }
     }
     fetchUpdates()
-  }, [])
+  }, [language])
 
   return (
     <div className="bg-white rounded-2xl p-6 card-shadow border border-slate-100 h-full">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-bold text-slate-800">آخر التحديثات</h3>
+        <h3 className="text-lg font-bold text-slate-800">{t('آخر التحديثات', 'Recent Updates')}</h3>
       </div>
 
       <div className="space-y-4">
         {loading ? (
-          <div className="text-center py-8 text-slate-400 text-sm">جارٍ تحميل التحديثات...</div>
+          <div className="text-center py-8 text-slate-400 text-sm">{t('جارٍ تحميل التحديثات...', 'Loading updates...')}</div>
         ) : updates.length === 0 ? (
-          <div className="text-center py-8 text-slate-400 text-sm">لا توجد تحديثات حديثة</div>
+          <div className="text-center py-8 text-slate-400 text-sm">{t('لا توجد تحديثات حديثة', 'No recent updates')}</div>
         ) : (
           updates.map((update) => (
             <div key={update.id} className="flex gap-3 group">
@@ -133,7 +148,7 @@ function RecentUpdates() {
       </div>
 
       <button className="w-full mt-6 h-10 flex items-center justify-center gap-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-xl transition-colors border border-primary-100">
-        <span>عرض جميع الأنشطة</span>
+        <span>{t('عرض جميع الأنشطة', 'View All Activity')}</span>
         <ArrowLeft className="w-4 h-4" />
       </button>
     </div>

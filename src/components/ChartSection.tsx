@@ -3,6 +3,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { api, PaymentModel, FinancialReport } from '../services/api'
 
 const MONTHS_AR = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 function getPaymentsList(data: PaymentModel[] | { payments?: PaymentModel[] } | undefined): PaymentModel[] {
   if (!data) return []
@@ -15,11 +16,18 @@ interface ChartDataPoint {
   value: number
 }
 
-function ChartSection() {
+interface ChartSectionProps {
+  language: 'AR' | 'EN'
+}
+
+function ChartSection({ language }: ChartSectionProps) {
+  const t = (ar: string, en: string) => language === 'AR' ? ar : en
   const [period, setPeriod] = useState<'monthly' | 'yearly'>('monthly')
   const [monthlyData, setMonthlyData] = useState<ChartDataPoint[]>([])
   const [yearlyData, setYearlyData] = useState<ChartDataPoint[]>([])
   const [loading, setLoading] = useState(true)
+
+  const monthsData = language === 'AR' ? MONTHS_AR : MONTHS_EN
 
   useEffect(() => {
     async function fetchData() {
@@ -61,7 +69,7 @@ function ChartSection() {
           }
         }
 
-        const months: ChartDataPoint[] = MONTHS_AR.map((name, i) => ({ month: name, value: monthBuckets[i] || 0 }))
+        const months: ChartDataPoint[] = monthsData.map((name, i) => ({ month: name, value: monthBuckets[i] || 0 }))
         const years: ChartDataPoint[] = Object.entries(yearBuckets)
           .sort(([a], [b]) => Number(a) - Number(b))
           .map(([year, value]) => ({ month: year, value }))
@@ -75,7 +83,7 @@ function ChartSection() {
       }
     }
     fetchData()
-  }, [])
+  }, [language])
 
   const data = period === 'monthly' ? monthlyData : yearlyData
   const hasData = data.length > 0 && data.some(d => d.value > 0)
@@ -84,20 +92,20 @@ function ChartSection() {
     <div className="bg-white rounded-2xl p-6 card-shadow border border-slate-100 h-full">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-lg font-bold text-slate-800">تحصيل المدفوعات الشهرية</h3>
-          <p className="text-sm text-slate-400 mt-1">إجمالي المدفوعات المحصلة</p>
+          <h3 className="text-lg font-bold text-slate-800">{t('تحصيل المدفوعات الشهرية', 'Monthly Payment Collection')}</h3>
+          <p className="text-sm text-slate-400 mt-1">{t('إجمالي المدفوعات المحصلة', 'Total collected payments')}</p>
         </div>
         <div className="flex bg-slate-100 rounded-xl p-1">
-          <button onClick={() => setPeriod('monthly')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${period === 'monthly' ? 'bg-white text-primary-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>شهري</button>
-          <button onClick={() => setPeriod('yearly')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${period === 'yearly' ? 'bg-white text-primary-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>سنوي</button>
+          <button onClick={() => setPeriod('monthly')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${period === 'monthly' ? 'bg-white text-primary-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{t('شهري', 'Monthly')}</button>
+          <button onClick={() => setPeriod('yearly')} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${period === 'yearly' ? 'bg-white text-primary-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{t('سنوي', 'Yearly')}</button>
         </div>
       </div>
 
       <div className="h-64">
         {loading ? (
-          <div className="flex items-center justify-center h-full text-slate-400 text-sm">جارٍ تحميل البيانات...</div>
+          <div className="flex items-center justify-center h-full text-slate-400 text-sm">{t('جارٍ تحميل البيانات...', 'Loading data...')}</div>
         ) : !hasData ? (
-          <div className="flex items-center justify-center h-full text-slate-400 text-sm">لا توجد بيانات مدفوعات بعد</div>
+          <div className="flex items-center justify-center h-full text-slate-400 text-sm">{t('لا توجد بيانات مدفوعات بعد', 'No payment data yet')}</div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
@@ -110,7 +118,7 @@ function ChartSection() {
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
               <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
-              <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', fontSize: '13px', direction: 'rtl' }} formatter={(value: number) => [`${value.toLocaleString()} ر.س`, 'المبلغ']} />
+              <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)', fontSize: '13px', direction: language === 'AR' ? 'rtl' : 'ltr' }} formatter={(value: number) => [`${value.toLocaleString()} ${language === 'AR' ? 'ر.س' : 'SAR'}`, language === 'AR' ? 'المبلغ' : 'Amount']} />
               <Area type="monotone" dataKey="value" stroke="#16a34a" strokeWidth={2.5} fill="url(#colorValue)" dot={{ fill: '#16a34a', strokeWidth: 2, r: 4, stroke: '#fff' }} activeDot={{ r: 6, fill: '#16a34a', stroke: '#fff', strokeWidth: 3 }} />
             </AreaChart>
           </ResponsiveContainer>

@@ -44,25 +44,25 @@ function App() {
       if (announcementsRes.status === 'fulfilled') {
         const list = Array.isArray(announcementsRes.value) ? announcementsRes.value : []
         list.slice(0, 3).forEach((a: any) => {
-          items.push({ id: id++, title: a.title || 'إعلان', message: a.description || a.content || '', time: a.createdAt || '', unread: true })
+          items.push({ id: id++, title: a.title || (language === 'AR' ? 'إعلان' : 'Announcement'), message: a.description || a.content || '', time: a.createdAt || '', unread: true })
         })
       }
       if (complaintsRes.status === 'fulfilled') {
         const list = Array.isArray(complaintsRes.value) ? complaintsRes.value : (complaintsRes.value as any)?.data ?? []
         list.slice(0, 3).forEach((c: any) => {
-          items.push({ id: id++, title: c.title || 'شكوى', message: c.description || `فيلا ${c.villaNumber || ''}`, time: c.createdAt || '', unread: true })
+          items.push({ id: id++, title: c.title || (language === 'AR' ? 'شكوى' : 'Complaint'), message: c.description || `${language === 'AR' ? 'فيلا' : 'Villa'} ${c.villaNumber || ''}`, time: c.createdAt || '', unread: true })
         })
       }
       if (maintenanceRes.status === 'fulfilled') {
         const list = Array.isArray(maintenanceRes.value) ? maintenanceRes.value : (maintenanceRes.value as any)?.data ?? []
         list.slice(0, 3).forEach((m: any) => {
-          items.push({ id: id++, title: m.category || 'صيانة', message: m.description || `وحدة ${m.villaNumber || ''}`, time: m.createdAt || '', unread: true })
+          items.push({ id: id++, title: m.category || (language === 'AR' ? 'صيانة' : 'Maintenance'), message: m.description || `${language === 'AR' ? 'وحدة' : 'Unit'} ${m.villaNumber || ''}`, time: m.createdAt || '', unread: true })
         })
       }
 
       setNotifications(items.slice(0, 5))
     })
-  }, [isLoggedIn])
+  }, [isLoggedIn, language])
 
   const handleLogin = (_username: string) => {
     setIsLoggedIn(true)
@@ -90,15 +90,15 @@ function App() {
             <StatsCards />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 mt-6">
               <div className="lg:col-span-2">
-                <ChartSection />
+                <ChartSection language={language} />
               </div>
               <div>
-                <RecentUpdates />
+                <RecentUpdates language={language} />
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <PropertyCard />
-              <MaintenanceChart />
+              <PropertyCard language={language} />
+              <MaintenanceChart language={language} />
             </div>
           </>
         )
