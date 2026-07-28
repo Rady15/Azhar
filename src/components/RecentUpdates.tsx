@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Wrench, AlertCircle, ArrowLeft, Megaphone } from 'lucide-react'
+import { Wrench, AlertCircle, ArrowLeft, Mail } from 'lucide-react'
 import { api, AnnouncementModel, ComplaintModel, MaintenanceModel } from '../services/api'
 
 interface UpdateItem {
@@ -65,9 +65,9 @@ function RecentUpdates({ language }: RecentUpdatesProps) {
             list.forEach((a: AnnouncementModel) => {
               items.push({
                 id: `ann-${a.id ?? a.announcementId ?? Date.now()}`,
-                icon: Megaphone,
+                icon: Mail,
                 color: 'bg-purple-50 text-purple-600',
-                title: a.title || t('إعلان', 'Announcement'),
+                title: a.title || t('خطاب', 'Letter'),
                 description: a.description || a.content || '',
                 time: timeAgo(a.createdAt ?? '', language),
               })

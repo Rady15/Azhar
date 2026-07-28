@@ -21,6 +21,8 @@ import { api } from './services/api'
 
 type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'staff'
 
+const ALL_TABS: TabType[] = ['dashboard', 'tenants', 'villas', 'maintenance', 'complaints', 'payments', 'ads', 'reports', 'facilities', 'bookings', 'staff']
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
@@ -28,6 +30,7 @@ function App() {
   const [showNotifications, setShowNotifications] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [userName, setUserName] = useState(localStorage.getItem('azhar_name') || localStorage.getItem('azhar_email') || 'Admin')
+  const [userPermissions, setUserPermissions] = useState<string[]>(ALL_TABS)
 
   const [notifications, setNotifications] = useState<Array<{ id: number; title: string; message: string; time: string; unread: boolean }>>([])
 
@@ -67,6 +70,10 @@ function App() {
   const handleLogin = (_username: string) => {
     setIsLoggedIn(true)
     setUserName(localStorage.getItem('azhar_name') || localStorage.getItem('azhar_email') || _username || 'Admin')
+    const stored = localStorage.getItem('azhar_permissions')
+    if (stored) {
+      try { setUserPermissions(JSON.parse(stored)) } catch { setUserPermissions(ALL_TABS) }
+    }
   }
 
   const handleLogout = () => {
@@ -75,6 +82,13 @@ function App() {
   }
 
   const renderContent = () => {
+    const hasAccess = (tab: TabType) => userPermissions.includes(tab)
+    const noAccess = (
+      <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <p className="text-lg">{language === 'AR' ? 'ليس لديك صلاحية للوصول إلى هذه الصفحة' : 'You do not have permission to access this page'}</p>
+      </div>
+    )
+
     switch (activeTab) {
       case 'dashboard':
         return (
@@ -103,25 +117,25 @@ function App() {
           </>
         )
       case 'tenants':
-        return <Tenants language={language} />
+        return hasAccess('tenants') ? <Tenants language={language} /> : noAccess
       case 'villas':
-        return <Villas language={language} />
+        return hasAccess('villas') ? <Villas language={language} /> : noAccess
       case 'maintenance':
-        return <Maintenance language={language} />
+        return hasAccess('maintenance') ? <Maintenance language={language} /> : noAccess
       case 'complaints':
-        return <Complaints language={language} />
+        return hasAccess('complaints') ? <Complaints language={language} /> : noAccess
       case 'payments':
-        return <Payments language={language} />
+        return hasAccess('payments') ? <Payments language={language} /> : noAccess
       case 'ads':
-        return <Ads language={language} />
+        return hasAccess('ads') ? <Ads language={language} /> : noAccess
       case 'reports':
-        return <Reports language={language} />
+        return hasAccess('reports') ? <Reports language={language} /> : noAccess
       case 'facilities':
-        return <Facilities language={language} />
+        return hasAccess('facilities') ? <Facilities language={language} /> : noAccess
       case 'bookings':
-        return <Bookings language={language} />
+        return hasAccess('bookings') ? <Bookings language={language} /> : noAccess
       case 'staff':
-        return <Staff language={language} />
+        return hasAccess('staff') ? <Staff language={language} /> : noAccess
       default:
         return null
     }
@@ -144,10 +158,11 @@ function App() {
         setSearchQuery={setSearchQuery}
         setActiveTab={setActiveTab}
         userName={userName}
+        permissions={userPermissions}
       />
 
       <div className="flex">
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} language={language} userName={userName} />
+          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} language={language} userName={userName} permissions={userPermissions} />
 
           <main className={`flex-1 ${language === 'AR' ? 'mr-72' : 'ml-72'} p-6 pt-24`}>
             {renderContent()}

@@ -1,6 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Edit, Trash2, Eye, X, Users, Phone, Loader2, Check, BadgeCheck, BadgeX, Upload, ClipboardList, CheckCircle, LayoutList, Grid3X3 } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, X, Users, Phone, Loader2, Check, BadgeCheck, BadgeX, Upload, ClipboardList, CheckCircle, LayoutList, Grid3X3, ShieldCheck } from 'lucide-react'
 import { api, API_BASE_URL, StaffModel } from '../services/api'
+
+const ALL_PERMISSIONS: { key: string; labelAr: string; labelEn: string }[] = [
+  { key: 'dashboard', labelAr: 'الرئيسية', labelEn: 'Dashboard' },
+  { key: 'tenants', labelAr: 'المستأجرين', labelEn: 'Tenants' },
+  { key: 'villas', labelAr: 'الفلل', labelEn: 'Villas' },
+  { key: 'maintenance', labelAr: 'الصيانة', labelEn: 'Maintenance' },
+  { key: 'maintenance.assign', labelAr: 'تعيين الصيانة', labelEn: 'Assign Maintenance' },
+  { key: 'complaints', labelAr: 'الشكاوى', labelEn: 'Complaints' },
+  { key: 'payments', labelAr: 'المدفوعات', labelEn: 'Payments' },
+  { key: 'ads', labelAr: 'الخطابات', labelEn: 'Letters' },
+  { key: 'reports', labelAr: 'التقارير', labelEn: 'Reports' },
+  { key: 'facilities', labelAr: 'إدارة المرافق', labelEn: 'Facilities' },
+  { key: 'bookings', labelAr: 'حجوزات المرافق', labelEn: 'Bookings' },
+  { key: 'staff', labelAr: 'فريق العمل', labelEn: 'Staff' },
+]
 
 interface StaffProps {
   language: 'AR' | 'EN'
@@ -21,7 +36,8 @@ export default function Staff({ language }: StaffProps) {
     fullName: '',
     email: '',
     phoneNumber: '',
-    isActive: true
+    isActive: true,
+    permissions: [] as string[]
   })
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState('')
@@ -64,7 +80,7 @@ export default function Staff({ language }: StaffProps) {
 
   const openCreate = () => {
     setEditingStaff(null)
-    setFormData({ fullName: '', email: '', phoneNumber: '', isActive: true })
+    setFormData({ fullName: '', email: '', phoneNumber: '', isActive: true, permissions: ALL_PERMISSIONS.map(p => p.key) })
     setImageFile(null)
     setImagePreview('')
     setShowModal(true)
@@ -76,7 +92,8 @@ export default function Staff({ language }: StaffProps) {
       fullName: member.fullName,
       email: member.email,
       phoneNumber: member.phoneNumber || '',
-      isActive: member.isActive ?? true
+      isActive: member.isActive ?? true,
+      permissions: member.permissions ?? ALL_PERMISSIONS.map(p => p.key)
     })
     setImageFile(null)
     setImagePreview(member.profileImageUrl ? resolveImage(member.profileImageUrl) : '')
@@ -108,7 +125,8 @@ export default function Staff({ language }: StaffProps) {
         fullName: formData.fullName,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
-        isActive: formData.isActive
+        isActive: formData.isActive,
+        permissions: formData.permissions
       }
       if (imageFile) {
         payload.profileImage = imageFile
@@ -175,8 +193,9 @@ export default function Staff({ language }: StaffProps) {
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الاسم' : 'Name'}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'البريد' : 'Email'}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الهاتف' : 'Phone'}</th>
-                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'المهام المعلقة' : 'Pending Tasks'}</th>
-                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'المهام المنجزة' : 'Completed Tasks'}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'المهام المعلقة' : 'Pending'}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'المهام المنجزة' : 'Completed'}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الصلاحيات' : 'Permissions'}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الحالة' : 'Status'}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{language === 'AR' ? 'الإجراءات' : 'Actions'}</th>
               </tr>
@@ -211,6 +230,23 @@ export default function Staff({ language }: StaffProps) {
                     </span>
                   </td>
                   <td className="py-3 px-4">
+                    <div className="flex flex-wrap gap-1">
+                      {(member.permissions ?? []).length === ALL_PERMISSIONS.length ? (
+                        <span className="px-1.5 py-0.5 bg-primary-50 text-primary-600 rounded text-xs">{language === 'AR' ? 'الكل' : 'All'}</span>
+                      ) : (member.permissions ?? []).length === 0 ? (
+                        <span className="text-xs text-slate-400">—</span>
+                      ) : (
+                        (member.permissions ?? []).slice(0, 3).map(p => {
+                          const perm = ALL_PERMISSIONS.find(x => x.key === p)
+                          return <span key={p} className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-xs">{perm ? (language === 'AR' ? perm.labelAr : perm.labelEn) : p}</span>
+                        })
+                      )}
+                      {(member.permissions ?? []).length > 3 && (
+                        <span className="px-1.5 py-0.5 bg-slate-100 text-slate-400 rounded text-xs">+{(member.permissions ?? []).length - 3}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
                     {member.isActive
                       ? <span className="flex items-center gap-1 text-xs text-emerald-600"><BadgeCheck className="w-3.5 h-3.5" />{language === 'AR' ? 'نشط' : 'Active'}</span>
                       : <span className="flex items-center gap-1 text-xs text-red-500"><BadgeX className="w-3.5 h-3.5" />{language === 'AR' ? 'غير نشط' : 'Inactive'}</span>
@@ -226,7 +262,7 @@ export default function Staff({ language }: StaffProps) {
                 </tr>
               ))}
               {staff.length === 0 && (
-                <tr><td colSpan={7} className="text-center py-12 text-slate-400">{language === 'AR' ? 'لا يوجد أعضاء بعد' : 'No staff members yet'}</td></tr>
+                <tr><td colSpan={8} className="text-center py-12 text-slate-400">{language === 'AR' ? 'لا يوجد أعضاء بعد' : 'No staff members yet'}</td></tr>
               )}
             </tbody>
           </table>
@@ -255,6 +291,14 @@ export default function Staff({ language }: StaffProps) {
                 </div>
                 <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
                   {member.phoneNumber && <span className="flex items-center gap-1"><Phone className="w-3.5 h-3.5" />{member.phoneNumber}</span>}
+                </div>
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {(member.permissions ?? []).length === ALL_PERMISSIONS.length ? (
+                    <span className="px-2 py-0.5 bg-primary-50 text-primary-600 rounded text-xs font-medium">{language === 'AR' ? 'جميع الصلاحيات' : 'All Permissions'}</span>
+                  ) : (member.permissions ?? []).map(p => {
+                    const perm = ALL_PERMISSIONS.find(x => x.key === p)
+                    return perm ? <span key={p} className="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-xs">{language === 'AR' ? perm.labelAr : perm.labelEn}</span> : null
+                  })}
                 </div>
                 <div className="grid grid-cols-2 gap-2 mb-4">
                   <div className="p-2 bg-amber-50 rounded-lg text-center">
@@ -328,6 +372,32 @@ export default function Staff({ language }: StaffProps) {
                 <input type="checkbox" checked={formData.isActive} onChange={e => setFormData(prev => ({ ...prev, isActive: e.target.checked }))} className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500" />
                 <span className="text-sm font-medium text-slate-700">{language === 'AR' ? 'عضو نشط' : 'Active Member'}</span>
               </label>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-primary-600" />
+                  {language === 'AR' ? 'الصلاحيات' : 'Permissions'}
+                </label>
+                <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 rounded-xl">
+                  {ALL_PERMISSIONS.map(p => (
+                    <label key={p.key} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        checked={formData.permissions.includes(p.key)}
+                        onChange={e => {
+                          if (e.target.checked) {
+                            setFormData(prev => ({ ...prev, permissions: [...prev.permissions, p.key] }))
+                          } else {
+                            setFormData(prev => ({ ...prev, permissions: prev.permissions.filter(k => k !== p.key) }))
+                          }
+                        }}
+                        className="w-4 h-4 text-primary-600 border-slate-300 rounded focus:ring-primary-500"
+                      />
+                      <span className="text-slate-600">{language === 'AR' ? p.labelAr : p.labelEn}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={handleSave} disabled={saving || !formData.fullName || !formData.email} className="flex-1 h-10 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2">
@@ -373,6 +443,18 @@ export default function Staff({ language }: StaffProps) {
                 {viewingStaff.phoneNumber && (
                   <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-slate-400" /><span className="text-sm text-slate-600">{viewingStaff.phoneNumber}</span></div>
                 )}
+                <div className="flex flex-wrap gap-1.5">
+                  {(viewingStaff.permissions ?? []).length === ALL_PERMISSIONS.length ? (
+                    <span className="px-2 py-1 bg-primary-50 text-primary-600 rounded-lg text-xs font-medium flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" />{language === 'AR' ? 'جميع الصلاحيات' : 'All Permissions'}
+                    </span>
+                  ) : (viewingStaff.permissions ?? []).map(p => {
+                    const perm = ALL_PERMISSIONS.find(x => x.key === p)
+                    return perm ? (
+                      <span key={p} className="px-2 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs">{language === 'AR' ? perm.labelAr : perm.labelEn}</span>
+                    ) : null
+                  })}
+                </div>
                 <div className="flex items-center gap-2">
                   {viewingStaff.isActive
                     ? <BadgeCheck className="w-4 h-4 text-emerald-500" />

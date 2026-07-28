@@ -1,16 +1,24 @@
-import { useState, useEffect, useRef } from 'react'
-import { Plus, Edit, Trash2, Eye, X, Image, Upload, Loader2, Calendar, Clock, LayoutList, Grid3X3 } from 'lucide-react'
-import { api, API_BASE_URL } from '../services/api'
+import { useState, useEffect } from 'react'
+import { Plus, Trash2, Eye, X, Send, LayoutList, Grid3X3, Mail, Users, User, Calendar, Clock, CheckCircle, Loader2 } from 'lucide-react'
+import { api } from '../services/api'
 
-interface Advertisement {
+interface Tenant {
+  id: string
+  fullName: string
+  email: string
+  houseNumber: string
+  phoneNumber: string
+}
+
+interface Letter {
   id: string
   title: string
-  description: string
-  image: string
-  imageUrls: string[]
-  date?: string
-  createdAt?: string
-  isActive: boolean
+  content: string
+  recipientType: 'all' | 'specific'
+  recipientId?: string
+  recipientName?: string
+  sentDate: string
+  status: 'sent' | 'draft'
 }
 
 interface AdsProps {
@@ -18,329 +26,285 @@ interface AdsProps {
 }
 
 function Ads({ language }: AdsProps) {
-  const [ads, setAds] = useState<Advertisement[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  const t = (ar: string, en: string) => language === 'AR' ? ar : en
+  const [letters, setLetters] = useState<Letter[]>(() => {
+    const stored = localStorage.getItem('azhar_letters')
+    return stored ? JSON.parse(stored) : []
+  })
+  const [tenants, setTenants] = useState<Tenant[]>([])
+  const [loadingTenants, setLoadingTenants] = useState(false)
 
   const [showModal, setShowModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
-  const [editingAd, setEditingAd] = useState<Advertisement | null>(null)
-  const [viewingAd, setViewingAd] = useState<Advertisement | null>(null)
-  const [formData, setFormData] = useState<Partial<Advertisement>>({})
-  const [imagePreview, setImagePreview] = useState('')
-  const [imageFiles, setImageFiles] = useState<File[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid')
-
-  const resolveImageUrl = (item: any): string => {
-    const urls = item.imageUrls ?? item.images ?? []
-    const raw = Array.isArray(urls) ? urls[0] : (item.imageUrl ?? item.image ?? '')
-    if (raw && typeof raw === 'string' && raw.startsWith('/')) return API_BASE_URL + raw
-    return raw || ''
-  }
-
-  const resolveImageUrls = (item: any): string[] => {
-    const urls = item.imageUrls ?? item.images ?? []
-    if (Array.isArray(urls)) return urls.map((u: string) => u?.startsWith('http') ? u : `${API_BASE_URL}${u}`)
-    const single = item.imageUrl ?? item.image ?? ''
-    return single ? [single?.startsWith('http') ? single : `${API_BASE_URL}${single}`] : []
-  }
-
-  const mapAnnouncement = (item: any): Advertisement => ({
-    id: String(item.id ?? item.announcementId ?? Date.now()),
-    title: item.title ?? '',
-    description: item.description ?? item.content ?? '',
-    image: resolveImageUrl(item),
-    imageUrls: resolveImageUrls(item),
-    date: item.announcementDate?.split('T')[0] ?? item.createdAt?.split('T')[0] ?? '',
-    createdAt: item.createdAt,
-    isActive: item.isActive !== false
-  })
-
-  const fetchAds = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await api.getAnnouncements()
-      if (Array.isArray(data)) {
-        setAds(data.map(mapAnnouncement))
-      } else {
-        setAds([])
-      }
-    } catch (err: any) {
-      console.error('Announcements API error:', err)
-      setError(language === 'AR' ? 'تعذر تحميل الإعلانات من الخادم' : 'Failed to load announcements from server')
-      setAds([])
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [viewingLetter, setViewingLetter] = useState<Letter | null>(null)
+  const [formData, setFormData] = useState<Partial<Letter>>({})
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
 
   useEffect(() => {
-    fetchAds()
+    localStorage.setItem('azhar_letters', JSON.stringify(letters))
+  }, [letters])
+
+  useEffect(() => {
+    setLoadingTenants(true)
+    api.getTenants()
+      .then((data: any) => {
+        const list: Tenant[] = Array.isArray(data)
+          ? data.map((t: any) => ({ id: String(t.id || t.tenantId || ''), fullName: t.fullName || t.name || '', email: t.email || '', houseNumber: t.houseNumber || t.villaNumber || '', phoneNumber: t.phoneNumber || '' }))
+          : []
+        setTenants(list)
+      })
+      .catch(() => {})
+      .finally(() => setLoadingTenants(false))
   }, [])
 
+  const getNextId = () => `LET-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+
   const handleAdd = () => {
-    setEditingAd(null)
-    setFormData({ title: '', description: '', date: new Date().toISOString().split('T')[0], isActive: true })
-    setImagePreview('')
-    setImageFiles([])
+    setFormData({ title: '', content: '', recipientType: 'all', recipientId: '', recipientName: '', sentDate: new Date().toISOString().split('T')[0], status: 'draft' })
     setShowModal(true)
   }
 
-  const handleEdit = (ad: Advertisement) => {
-    setEditingAd(ad)
-    setFormData({ ...ad })
-    setImagePreview(ad.image ?? '')
-    setImageFiles([])
-    setShowModal(true)
-  }
-
-  const handleView = (ad: Advertisement) => {
-    setViewingAd(ad)
+  const handleView = (letter: Letter) => {
+    setViewingLetter(letter)
     setShowViewModal(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm(language === 'AR' ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete?')) return
-    try {
-      await api.deleteAnnouncement(id)
-      setAds(ads.filter(a => a.id !== id))
-    } catch (err: any) {
-      console.error('Delete announcement error:', err)
-      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+  const handleDelete = (id: string) => {
+    if (window.confirm(t('هل أنت متأكد من حذف هذا الخطاب؟', 'Are you sure you want to delete this letter?'))) {
+      setLetters(letters.filter(l => l.id !== id))
     }
   }
 
-  const handleToggleActive = async (ad: Advertisement) => {
-    try {
-      const payload: Record<string, any> = {
-        title: ad.title,
-        description: ad.description,
-        announcementDate: ad.date ? new Date(ad.date).toISOString() : new Date().toISOString(),
-        isActive: !ad.isActive
-      }
-      await api.updateAnnouncement(ad.id, payload)
-      setAds(ads.map(a => a.id === ad.id ? { ...a, isActive: !a.isActive } : a))
-    } catch (err: any) {
-      console.error('Toggle active error:', err)
+  const handleSend = (id: string) => {
+    setLetters(letters.map(l => l.id === id ? { ...l, status: 'sent' as const, sentDate: new Date().toISOString().split('T')[0] } : l))
+  }
+
+  const handleSave = () => {
+    if (!formData.title || !formData.content) {
+      alert(t('يرجى إدخال عنوان الخطاب والمحتوى', 'Please enter letter title and content'))
+      return
     }
-  }
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const payload: Record<string, any> = {
-        title: formData.title ?? '',
-        description: formData.description ?? '',
-        announcementDate: formData.date ? new Date(formData.date).toISOString() : new Date().toISOString(),
-        isActive: formData.isActive !== false
-      }
-      if (imageFiles.length > 0) {
-        payload.images = imageFiles
-      }
-
-      if (editingAd) {
-        await api.updateAnnouncement(editingAd.id, payload)
-        setAds(ads.map(a => a.id === editingAd.id ? { ...a, ...formData } as Advertisement : a))
-      } else {
-        const created = await api.createAnnouncement(payload)
-        const newAd = mapAnnouncement({ ...payload, ...created })
-        setAds([newAd, ...ads])
-      }
-      setShowModal(false)
-    } catch (err: any) {
-      console.error('Save announcement error:', err)
-      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
-    } finally {
-      setSaving(false)
+    if (formData.recipientType === 'specific' && !formData.recipientId) {
+      alert(t('يرجى اختيار المستلم', 'Please select a recipient'))
+      return
     }
+
+    const recipientName = formData.recipientType === 'all'
+      ? t('جميع المستأجرين', 'All Tenants')
+      : tenants.find(tt => tt.id === formData.recipientId)?.fullName || formData.recipientName || ''
+
+    setLetters([{
+      ...formData as Letter,
+      id: getNextId(),
+      recipientName,
+      status: 'sent',
+      sentDate: new Date().toISOString().split('T')[0],
+    }, ...letters])
+    setShowModal(false)
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (files && files.length > 0) {
-      setImagePreview(URL.createObjectURL(files[0]))
-      setImageFiles(Array.from(files))
-    }
-  }
-
-  const t = (ar: string, en: string) => language === 'AR' ? ar : en
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-2xl p-6 flex items-center justify-center h-64">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
-          <p className="text-sm text-slate-500">{t('جارٍ تحميل الإعلانات...', 'Loading announcements...')}</p>
-        </div>
-      </div>
-    )
-  }
+  const draftCount = letters.filter(l => l.status === 'draft').length
+  const sentCount = letters.filter(l => l.status === 'sent').length
 
   return (
     <div className="bg-white rounded-2xl p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold text-slate-800">{t('الإعلانات', 'Announcements')}</h2>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-slate-800">{t('الخطابات', 'Letters')}</h2>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 border border-slate-200 rounded-lg p-0.5">
-            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-primary-100 text-primary-700' : 'text-slate-400 hover:text-slate-600'}`} title={t('عرض كقائمة', 'List view')}><LayoutList className="w-4 h-4" /></button>
-            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-primary-100 text-primary-700' : 'text-slate-400 hover:text-slate-600'}`} title={t('عرض كبطاقات', 'Grid view')}><Grid3X3 className="w-4 h-4" /></button>
+            <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-slate-600'}`} title={t('عرض كقائمة', 'List view')}><LayoutList className="w-4 h-4" /></button>
+            <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-slate-600'}`} title={t('عرض كبطاقات', 'Grid view')}><Grid3X3 className="w-4 h-4" /></button>
           </div>
-          <button onClick={handleAdd} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors">
-            <Plus className="w-4 h-4" />{t('إضافة إعلان', 'Add Announcement')}
+          <button onClick={handleAdd} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors">
+            <Plus className="w-4 h-4" />{t('خطاب جديد', 'New Letter')}
           </button>
         </div>
       </div>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-xl text-sm flex justify-between items-center">
-          <span>{error}</span>
-          <button onClick={fetchAds} className="underline text-xs hover:text-red-900">{t('إعادة المحاولة', 'Retry')}</button>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="p-4 bg-indigo-50 rounded-xl">
+          <p className="text-sm text-indigo-600">{t('إجمالي الخطابات', 'Total Letters')}</p>
+          <p className="text-xl font-bold text-indigo-700">{letters.length}</p>
         </div>
-      )}
+        <div className="p-4 bg-green-50 rounded-xl">
+          <p className="text-sm text-green-600">{t('مرسلة', 'Sent')}</p>
+          <p className="text-xl font-bold text-green-700">{sentCount}</p>
+        </div>
+        <div className="p-4 bg-amber-50 rounded-xl">
+          <p className="text-sm text-amber-600">{t('مسودة', 'Drafts')}</p>
+          <p className="text-xl font-bold text-amber-700">{draftCount}</p>
+        </div>
+      </div>
 
-      {viewMode === 'list' ? (
+      {/* List View */}
+      {viewMode === 'list' && (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-200">
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('العنوان', 'Title')}</th>
-                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('التاريخ', 'Date')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('المستلم', 'Recipient')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('تاريخ الإرسال', 'Sent Date')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الحالة', 'Status')}</th>
-                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('تم الإنشاء', 'Created')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الإجراءات', 'Actions')}</th>
               </tr>
             </thead>
             <tbody>
-              {ads.map(ad => (
-                <tr key={ad.id} className="border-b border-slate-100 hover:bg-slate-50">
+              {letters.map(letter => (
+                <tr key={letter.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      {ad.image && <img src={ad.image} alt="" className="w-8 h-8 rounded object-cover" />}
-                      <span className="text-slate-700 font-medium">{ad.title}</span>
+                      <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                        <Mail className="w-4 h-4 text-indigo-600" />
+                      </div>
+                      <span className="text-slate-700 font-medium">{letter.title}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-slate-600 text-xs">{ad.date || '-'}</td>
                   <td className="py-3 px-4">
-                    <button onClick={() => handleToggleActive(ad)} className={`px-2 py-0.5 rounded-full text-xs font-semibold ${ad.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                      {ad.isActive ? t('نشط', 'Active') : t('غير نشط', 'Inactive')}
-                    </button>
+                    <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                      {letter.recipientType === 'all' ? (
+                        <><Users className="w-3.5 h-3.5 text-slate-400" />{t('جميع المستأجرين', 'All Tenants')}</>
+                      ) : (
+                        <><User className="w-3.5 h-3.5 text-slate-400" />{letter.recipientName || letter.recipientId}</>
+                      )}
+                    </div>
                   </td>
-                  <td className="py-3 px-4 text-slate-400 text-xs">{ad.createdAt ? new Date(ad.createdAt).toLocaleDateString() : '-'}</td>
+                  <td className="py-3 px-4 text-sm text-slate-500">{letter.sentDate}</td>
+                  <td className="py-3 px-4">
+                    {letter.status === 'sent' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium"><CheckCircle className="w-3 h-3" />{t('مرسل', 'Sent')}</span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium"><Clock className="w-3 h-3" />{t('مسودة', 'Draft')}</span>
+                    )}
+                  </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => handleView(ad)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-4 h-4" /></button>
-                      <button onClick={() => handleEdit(ad)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"><Edit className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(ad.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleView(letter)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-4 h-4" /></button>
+                      {letter.status === 'draft' && (
+                        <button onClick={() => handleSend(letter.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"><Send className="w-4 h-4" /></button>
+                      )}
+                      <button onClick={() => handleDelete(letter.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {ads.length === 0 && (
-                <tr><td colSpan={5} className="text-center py-12 text-slate-400">{t('لا توجد إعلانات بعد', 'No announcements yet')}</td></tr>
+              {letters.length === 0 && (
+                <tr><td colSpan={5} className="text-center py-12 text-slate-400">{t('لا توجد خطابات بعد', 'No letters yet')}</td></tr>
               )}
             </tbody>
           </table>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {ads.map(ad => (
-            <div key={ad.id} className={`border rounded-xl overflow-hidden hover:shadow-lg transition-shadow ${ad.isActive ? 'border-slate-200' : 'border-slate-200 opacity-70'}`}>
-              <div className="h-40 bg-slate-100 relative">
-                {ad.image
-                  ? <img src={ad.image} alt={ad.title} className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center"><Image className="w-12 h-12 text-slate-300" /></div>}
-                {!ad.isActive && (
-                  <span className="absolute top-2 left-2 px-2 py-0.5 bg-slate-800/70 text-white text-xs rounded-full">{t('غير نشط', 'Inactive')}</span>
+      )}
+
+      {/* Grid View */}
+      {viewMode === 'grid' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {letters.map(letter => (
+            <div key={letter.id} className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-lg transition-shadow">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800">{letter.title}</p>
+                    <p className="text-xs text-slate-400">
+                      {letter.recipientType === 'all' ? t('إلى الكل', 'To All') : letter.recipientName}
+                    </p>
+                  </div>
+                </div>
+                {letter.status === 'sent' ? (
+                  <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">{t('مرسل', 'Sent')}</span>
+                ) : (
+                  <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">{t('مسودة', 'Draft')}</span>
                 )}
               </div>
-              <div className="p-4">
-                <h3 className="font-bold text-slate-800 mb-1">{ad.title}</h3>
-                <p className="text-sm text-slate-500 mb-3 line-clamp-2">{ad.description}</p>
-                <div className="flex items-center gap-3 text-xs text-slate-400 mb-2">
-                  {ad.date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{ad.date}</span>}
-                  {ad.createdAt && (
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(ad.createdAt).toLocaleDateString()}</span>
+              <p className="text-sm text-slate-500 line-clamp-3 mb-3">{letter.content}</p>
+              <div className="flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-100">
+                <span>{letter.sentDate}</span>
+                <div className="flex gap-1">
+                  <button onClick={() => handleView(letter)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-3.5 h-3.5" /></button>
+                  {letter.status === 'draft' && (
+                    <button onClick={() => handleSend(letter.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg"><Send className="w-3.5 h-3.5" /></button>
                   )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => handleToggleActive(ad)} className={`px-2.5 py-1 rounded-full text-xs font-semibold ${ad.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                    {ad.isActive ? t('نشط', 'Active') : t('غير نشط', 'Inactive')}
-                  </button>
-                </div>
-                <div className="flex gap-2 mt-3">
-                  <button onClick={() => handleView(ad)} className="flex-1 py-2 text-blue-600 hover:bg-blue-50 rounded-lg text-sm flex items-center justify-center gap-1">
-                    <Eye className="w-4 h-4" />{t('عرض', 'View')}
-                  </button>
-                  <button onClick={() => handleEdit(ad)} className="flex-1 py-2 text-amber-600 hover:bg-amber-50 rounded-lg text-sm flex items-center justify-center gap-1">
-                    <Edit className="w-4 h-4" />{t('تعديل', 'Edit')}
-                  </button>
-                  <button onClick={() => handleDelete(ad.id)} className="flex-1 py-2 text-red-600 hover:bg-red-50 rounded-lg text-sm flex items-center justify-center gap-1">
-                    <Trash2 className="w-4 h-4" />{t('حذف', 'Delete')}
-                  </button>
+                  <button onClick={() => handleDelete(letter.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
             </div>
           ))}
-          {ads.length === 0 && (
-            <div className="col-span-2 text-center py-16 text-slate-400">
-              <Image className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>{t('لا توجد إعلانات بعد', 'No announcements yet')}</p>
+          {letters.length === 0 && (
+            <div className="col-span-full text-center py-16 text-slate-400">
+              <Mail className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <p>{t('لا توجد خطابات بعد', 'No letters yet')}</p>
             </div>
           )}
         </div>
       )}
 
+      {/* Letter Form Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-slate-800">{editingAd ? t('تعديل إعلان', 'Edit Announcement') : t('إضافة إعلان', 'Add Announcement')}</h3>
+              <h3 className="text-lg font-bold text-slate-800">{t('خطاب جديد', 'New Letter')}</h3>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('العنوان', 'Title')}</label>
-                <input type="text" value={formData.title || ''} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('عنوان الخطاب', 'Letter Title')} *</label>
+                <input type="text" value={formData.title || ''} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" placeholder={t('مثال: تجديد عقد النظافة', 'e.g. Cleaning contract renewal')} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('الوصف', 'Description')}</label>
-                <textarea value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={2} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('التاريخ', 'Date')}</label>
-                <input type="date" value={formData.date || ''} onChange={e => setFormData({ ...formData, date: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('الحالة', 'Status')}</label>
-                <select value={formData.isActive ? 'true' : 'false'} onChange={e => setFormData({ ...formData, isActive: e.target.value === 'true' })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
-                  <option value="true">{t('نشط', 'Active')}</option>
-                  <option value="false">{t('غير نشط', 'Inactive')}</option>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('المستلم', 'Recipient')} *</label>
+                <select
+                  value={formData.recipientType || 'all'}
+                  onChange={e => {
+                    const val = e.target.value as 'all' | 'specific'
+                    setFormData({ ...formData, recipientType: val, recipientId: val === 'all' ? '' : formData.recipientId })
+                  }}
+                  className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm"
+                >
+                  <option value="all">{t('جميع المستأجرين', 'All Tenants')}</option>
+                  <option value="specific">{t('مستأجر محدد', 'Specific Tenant')}</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('الصور', 'Images')}</label>
-                <div className="flex items-center gap-2">
-                  <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} className="hidden" />
-                  <button type="button" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl text-sm text-slate-600 hover:bg-slate-50">
-                    <Upload className="w-4 h-4" />{t('اختر صوراً', 'Choose Images')}
-                  </button>
-                  {imageFiles.length > 0 && <span className="text-sm text-slate-500">{imageFiles.length} {t('صور', 'image(s)')}</span>}
+              {formData.recipientType === 'specific' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('اختر المستأجر', 'Select Tenant')} *</label>
+                  <select
+                    value={formData.recipientId || ''}
+                    onChange={e => {
+                      const tenant = tenants.find(tt => tt.id === e.target.value)
+                      setFormData({ ...formData, recipientId: e.target.value, recipientName: tenant?.fullName || '' })
+                    }}
+                    className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm"
+                  >
+                    <option value="">{t('-- اختر مستأجر --', '-- Select Tenant --')}</option>
+                    {tenants.map(tt => (
+                      <option key={tt.id} value={tt.id}>{tt.fullName} - {tt.houseNumber}</option>
+                    ))}
+                  </select>
+                  {loadingTenants && (
+                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" />{t('جارٍ تحميل المستأجرين...', 'Loading tenants...')}</p>
+                  )}
                 </div>
-                {imagePreview && (
-                  <div className="relative mt-2 inline-block">
-                    <img src={imagePreview} alt="Preview" className="h-32 rounded-lg object-cover" />
-                    <button type="button" onClick={() => { setImagePreview(''); setImageFiles([]) }} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5"><X className="w-4 h-4" /></button>
-                  </div>
-                )}
+              )}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('محتوى الخطاب', 'Letter Content')} *</label>
+                <textarea
+                  value={formData.content || ''}
+                  onChange={e => setFormData({ ...formData, content: e.target.value })}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm resize-none"
+                  placeholder={t('اكتب محتوى الخطاب هنا...', 'Write the letter content here...')}
+                />
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={handleSave} disabled={saving} className="flex-1 h-10 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 flex items-center justify-center gap-2">
-                {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-                {t('حفظ', 'Save')}
+              <button onClick={handleSave} className="flex-1 h-10 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 flex items-center justify-center gap-2">
+                <Send className="w-4 h-4" />{t('إرسال', 'Send')}
               </button>
               <button onClick={() => setShowModal(false)} className="flex-1 h-10 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200">{t('إلغاء', 'Cancel')}</button>
             </div>
@@ -348,23 +312,45 @@ function Ads({ language }: AdsProps) {
         </div>
       )}
 
-      {showViewModal && viewingAd && (
+      {/* View Letter Modal */}
+      {showViewModal && viewingLetter && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-slate-800">{viewingAd.title}</h3>
+              <h3 className="text-lg font-bold text-slate-800">{viewingLetter.title}</h3>
               <button onClick={() => setShowViewModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
-            {viewingAd.image && <img src={viewingAd.image} alt={viewingAd.title} className="w-full h-48 object-cover rounded-xl mb-4" />}
-            <p className="text-sm text-slate-600 mb-4">{viewingAd.description}</p>
-            <div className="flex items-center gap-4 text-xs text-slate-400 mb-2">
-              {viewingAd.date && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{viewingAd.date}</span>}
-              {viewingAd.createdAt && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(viewingAd.createdAt).toLocaleDateString()}</span>}
+            <div className="p-4 bg-indigo-50 rounded-xl mb-4">
+              <div className="flex items-center gap-2 text-sm text-slate-600 mb-2">
+                {viewingLetter.recipientType === 'all' ? (
+                  <><Users className="w-4 h-4 text-slate-400" /><span>{t('المستلم: جميع المستأجرين', 'Recipient: All Tenants')}</span></>
+                ) : (
+                  <><User className="w-4 h-4 text-slate-400" /><span>{t('المستلم:', 'Recipient:')} {viewingLetter.recipientName || viewingLetter.recipientId}</span></>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-slate-600">
+                <Calendar className="w-4 h-4 text-slate-400" />
+                <span>{t('تاريخ الإرسال:', 'Sent Date:')} {viewingLetter.sentDate}</span>
+              </div>
+              <div className="mt-2">
+                {viewingLetter.status === 'sent' ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium"><CheckCircle className="w-3 h-3" />{t('مرسل', 'Sent')}</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium"><Clock className="w-3 h-3" />{t('مسودة', 'Draft')}</span>
+                )}
+              </div>
             </div>
-            <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${viewingAd.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-              {viewingAd.isActive ? t('نشط', 'Active') : t('غير نشط', 'Inactive')}
-            </span>
-            <button onClick={() => setShowViewModal(false)} className="w-full h-10 mt-4 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200">{t('إغلاق', 'Close')}</button>
+            <div className="p-4 bg-white border border-slate-200 rounded-xl whitespace-pre-wrap text-sm text-slate-700 leading-relaxed min-h-[120px]">
+              {viewingLetter.content}
+            </div>
+            <div className="flex gap-3 mt-4">
+              {viewingLetter.status === 'draft' && (
+                <button onClick={() => { handleSend(viewingLetter.id); setViewingLetter({ ...viewingLetter, status: 'sent' }) }} className="flex-1 h-10 bg-green-600 text-white rounded-xl hover:bg-green-700 flex items-center justify-center gap-2">
+                  <Send className="w-4 h-4" />{t('إرسال', 'Send')}
+                </button>
+              )}
+              <button onClick={() => setShowViewModal(false)} className={`h-10 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 ${viewingLetter.status === 'draft' ? 'flex-1' : 'w-full'}`}>{t('إغلاق', 'Close')}</button>
+            </div>
           </div>
         </div>
       )}

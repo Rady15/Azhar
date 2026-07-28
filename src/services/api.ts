@@ -324,6 +324,7 @@ export interface StaffModel {
   isActive?: boolean;
   pendingTasksCount?: number;
   completedTasksCount?: number;
+  permissions?: string[];
 }
 
 export interface BookingRequest {

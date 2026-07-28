@@ -5,7 +5,7 @@ import {
   Wrench, 
   AlertCircle, 
   CreditCard, 
-  Megaphone, 
+  Mail, 
   FileBarChart,
   CalendarCheck,
   Building2,
@@ -19,6 +19,7 @@ interface SidebarProps {
   setActiveTab: (tab: TabType) => void
   language: 'AR' | 'EN'
   userName?: string
+  permissions: string[]
 }
 
 const tabLabels: Record<TabType, { AR: string; EN: string }> = {
@@ -28,7 +29,7 @@ const tabLabels: Record<TabType, { AR: string; EN: string }> = {
   maintenance: { AR: 'الصيانة', EN: 'Maintenance' },
   complaints: { AR: 'الشكاوى', EN: 'Complaints' },
   payments: { AR: 'المدفوعات', EN: 'Payments' },
-  ads: { AR: 'الإعلانات', EN: 'Advertisements' },
+  ads: { AR: 'الخطابات', EN: 'Letters' },
   reports: { AR: 'التقارير', EN: 'Reports' },
   facilities: { AR: 'إدارة المرافق', EN: 'Communal Facilities' },
   bookings: { AR: 'حجوزات المرافق', EN: 'Facility Bookings' },
@@ -42,21 +43,22 @@ const navItems: { icon: typeof LayoutDashboard; tab: TabType }[] = [
   { icon: Wrench, tab: 'maintenance' },
   { icon: AlertCircle, tab: 'complaints' },
   { icon: CreditCard, tab: 'payments' },
-  { icon: Megaphone, tab: 'ads' },
+  { icon: Mail, tab: 'ads' },
   { icon: FileBarChart, tab: 'reports' },
   { icon: Building2, tab: 'facilities' },
   { icon: CalendarCheck, tab: 'bookings' },
   { icon: Briefcase, tab: 'staff' },
 ]
 
-function Sidebar({ activeTab, setActiveTab, language, userName }: SidebarProps) {
+function Sidebar({ activeTab, setActiveTab, language, userName, permissions }: SidebarProps) {
   const getLabel = (tab: TabType) => tabLabels[tab][language]
+  const visibleNavItems = navItems.filter(item => permissions.includes(item.tab))
   
   return (
     <aside className={`fixed top-16 bottom-0 w-72 bg-white border-slate-200 flex flex-col z-40 ${language === 'AR' ? 'right-0 border-l' : 'left-0 border-r'}`}>
       <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-1">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <li key={item.tab}>
               <button
                 onClick={() => setActiveTab(item.tab)}

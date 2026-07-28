@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Search, Bell, Globe, ChevronDown, LogOut, Users, Home, Wrench, AlertCircle, CreditCard, Megaphone, FileBarChart, CalendarCheck, Building2, Briefcase } from 'lucide-react'
+import { Search, Bell, Globe, ChevronDown, LogOut, Users, Home, Wrench, AlertCircle, CreditCard, Mail, FileBarChart, CalendarCheck, Building2, Briefcase } from 'lucide-react'
 
 interface Notification {
   id: number
@@ -20,6 +20,7 @@ interface HeaderProps {
   setSearchQuery: (query: string) => void
   setActiveTab: (tab: any) => void
   userName?: string
+  permissions?: string[]
 }
 
 interface SearchResult {
@@ -29,7 +30,7 @@ interface SearchResult {
   category: string
 }
 
-function Header({ language, setLanguage, notifications, showNotifications, setShowNotifications, onLogout, searchQuery, setSearchQuery, setActiveTab, userName }: HeaderProps) {
+function Header({ language, setLanguage, notifications, showNotifications, setShowNotifications, onLogout, searchQuery, setSearchQuery, setActiveTab, userName, permissions }: HeaderProps) {
   const unreadCount = notifications.filter(n => n.unread).length
   const [showSuggestions, setShowSuggestions] = useState(false)
 
@@ -44,15 +45,18 @@ function Header({ language, setLanguage, notifications, showNotifications, setSh
     { id: 'complaints-add', label: language === 'AR' ? 'إضافة شكوى' : 'Add Complaint', icon: AlertCircle, category: language === 'AR' ? 'إجراءات' : 'Actions' },
     { id: 'payments', label: language === 'AR' ? 'المدفوعات' : 'Payments', icon: CreditCard, category: language === 'AR' ? 'أقسام' : 'Sections' },
     { id: 'payments-add', label: language === 'AR' ? 'إضافة دفعة' : 'Add Payment', icon: CreditCard, category: language === 'AR' ? 'إجراءات' : 'Actions' },
-    { id: 'ads', label: language === 'AR' ? 'الإعلانات' : 'Advertisements', icon: Megaphone, category: language === 'AR' ? 'أقسام' : 'Sections' },
-    { id: 'ads-add', label: language === 'AR' ? 'إضافة إعلان' : 'Add Advertisement', icon: Megaphone, category: language === 'AR' ? 'إجراءات' : 'Actions' },
+    { id: 'ads', label: language === 'AR' ? 'الخطابات' : 'Letters', icon: Mail, category: language === 'AR' ? 'أقسام' : 'Sections' },
+    { id: 'ads-add', label: language === 'AR' ? 'خطاب جديد' : 'New Letter', icon: Mail, category: language === 'AR' ? 'إجراءات' : 'Actions' },
     { id: 'reports', label: language === 'AR' ? 'التقارير' : 'Reports', icon: FileBarChart, category: language === 'AR' ? 'أقسام' : 'Sections' },
     { id: 'bookings', label: language === 'AR' ? 'حجوزات المرافق' : 'Facility Bookings', icon: CalendarCheck, category: language === 'AR' ? 'أقسام' : 'Sections' },
     { id: 'bookings-add', label: language === 'AR' ? 'إضافة حجز' : 'Add Booking', icon: CalendarCheck, category: language === 'AR' ? 'إجراءات' : 'Actions' },
     { id: 'facilities', label: language === 'AR' ? 'المرافق' : 'Facilities', icon: Building2, category: language === 'AR' ? 'أقسام' : 'Sections' },
     { id: 'staff', label: language === 'AR' ? 'فريق العمل' : 'Staff', icon: Briefcase, category: language === 'AR' ? 'أقسام' : 'Sections' },
     { id: 'dashboard', label: language === 'AR' ? 'الرئيسية' : 'Dashboard', icon: Home, category: language === 'AR' ? 'أقسام' : 'Sections' },
-  ], [language])
+  ].filter(r => {
+    const tab = r.id.replace('-add', '')
+    return !permissions || permissions.length === 0 || permissions.includes(tab)
+  }), [language, permissions])
 
   const filteredResults = useMemo(() => {
     if (!searchQuery.trim()) return []
