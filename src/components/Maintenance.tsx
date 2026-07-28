@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, Home, Loader2, Calendar, DollarSign, Wrench, Star, Upload, Flag, UserCircle, LayoutList, Grid3X3 } from 'lucide-react'
-import { api, MaintenanceModel, API_BASE_URL } from '../services/api'
+import { Plus, Edit, Trash2, Eye, X, Home, Loader2, Calendar, DollarSign, Wrench, Star, Upload, Flag, UserCircle, LayoutList, Grid3X3, User } from 'lucide-react'
+import { api, MaintenanceModel, StaffModel, API_BASE_URL } from '../services/api'
 
 interface MaintenanceRequest extends MaintenanceModel {
   _priority: 'low' | 'medium' | 'high' | 'urgent'
@@ -40,6 +40,7 @@ function Maintenance({ language }: MaintenanceProps) {
   const [formData, setFormData] = useState<Partial<MaintenanceRequest>>({})
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState('')
+  const [staffList, setStaffList] = useState<StaffModel[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const resolveImage = (url: string) =>
@@ -94,18 +95,29 @@ function Maintenance({ language }: MaintenanceProps) {
     }
   }
 
+  const fetchStaff = async () => {
+    try {
+      const data = await api.getStaff()
+      setStaffList(Array.isArray(data) ? data : [])
+    } catch {
+      setStaffList([])
+    }
+  }
+
   useEffect(() => {
     fetchRequests()
+    fetchStaff()
   }, [])
 
   const handleAdd = () => {
     setEditingRequest(null)
     setFormData({
       title: '', category: '', description: '', houseNumber: '',
-      priority: 'Medium', status: 'Submitted', cost: 0, adminNotes: ''
+      priority: 'Medium', status: 'Submitted', cost: 0, adminNotes: '', assignedToId: ''
     })
     setImagePreview('')
     setImageFile(null)
+    fetchStaff()
     setShowModal(true)
   }
 
@@ -145,18 +157,15 @@ function Maintenance({ language }: MaintenanceProps) {
         priority: formData.priority || 'Medium',
         status: formData.status || 'Submitted',
         cost: formData.cost || 0,
-        adminNotes: formData.adminNotes || ''
+        adminNotes: formData.adminNotes || '',
+        assignedToId: formData.assignedToId || ''
       }
       if (imageFile) {
         payload.images = [imageFile]
       }
 
       if (editingRequest) {
-        const maintenanceStatusMap: Record<string, number> = { Submitted: 0, InProgress: 1, Completed: 2, Rejected: 3 }
-        await api.updateMaintenanceStatus(String(editingRequest.id), {
-          Status: maintenanceStatusMap[formData.status || 'Submitted'] ?? 0,
-          AdminNotes: formData.adminNotes || ''
-        })
+        await api.updateMaintenance(String(editingRequest.id), payload)
         setRequests(requests.map(r => r.id === editingRequest.id ? { ...r, ...formData } as MaintenanceRequest : r))
       } else {
         const newBackend = await api.createMaintenance(payload)
@@ -243,7 +252,9 @@ function Maintenance({ language }: MaintenanceProps) {
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('المنزل', 'House')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الأولوية', 'Priority')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الحالة', 'Status')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('مسؤول', 'Assigned')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('التكلفة', 'Cost')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('التقييم', 'Rating')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الإجراءات', 'Actions')}</th>
               </tr>
             </thead>
@@ -256,7 +267,15 @@ function Maintenance({ language }: MaintenanceProps) {
                   <td className="py-3 px-4 text-slate-700">{request.houseNumber || request.villaNumber || '—'}</td>
                   <td className="py-3 px-4">{getPriorityBadge(request.priority || 'Medium')}</td>
                   <td className="py-3 px-4">{getStatusBadge(request.status)}</td>
+                  <td className="py-3 px-4 text-slate-700 text-sm">{request.assignedToName || '—'}</td>
                   <td className="py-3 px-4 text-slate-700">{request.cost ? `${request.cost} ${t('ج.م', 'EGP')}` : '—'}</td>
+                  <td className="py-3 px-4">
+                    {request.rating ? (
+                      <span className="flex items-center gap-1 text-amber-600 text-sm">
+                        <Star className="w-3.5 h-3.5 fill-amber-500" />{request.rating}
+                      </span>
+                    ) : '—'}
+                  </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
                       <button onClick={() => handleView(request)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title={t('عرض', 'View')}><Eye className="w-4 h-4" /></button>
@@ -285,6 +304,10 @@ function Maintenance({ language }: MaintenanceProps) {
                 <div className="flex justify-between"><span className="text-slate-400">{t('التصنيف', 'Category')}</span><span>{request.category || '—'}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">{t('المنزل', 'House')}</span><span>{request.houseNumber || request.villaNumber || '—'}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">{t('التكلفة', 'Cost')}</span><span className="font-medium">{request.cost ? `${request.cost} ${t('ج.م', 'EGP')}` : '—'}</span></div>
+                {request.assignedToName && <div className="flex justify-between"><span className="text-slate-400">{t('مسؤول', 'Assigned')}</span><span>{request.assignedToName}</span></div>}
+                {request.rating ? (
+                  <div className="flex justify-between"><span className="text-slate-400">{t('التقييم', 'Rating')}</span><span className="flex items-center gap-1 text-amber-600"><Star className="w-3.5 h-3.5 fill-amber-500" />{request.rating}</span></div>
+                ) : null}
               </div>
               <div className="flex items-center justify-end gap-1 pt-3 border-t border-slate-100">
                 <button onClick={() => handleView(request)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-3.5 h-3.5" /></button>
@@ -360,6 +383,15 @@ function Maintenance({ language }: MaintenanceProps) {
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('التكلفة', 'Cost')}</label>
                   <input type="number" value={formData.cost || ''} onChange={e => setFormData({ ...formData, cost: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('تعيين إلى', 'Assign To')}</label>
+                <select value={formData.assignedToId || ''} onChange={e => setFormData({ ...formData, assignedToId: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
+                  <option value="">-- {t('اختر موظف', 'Select Staff')} --</option>
+                  {staffList.map(s => (
+                    <option key={s.id} value={s.id}>{s.fullName}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('ملاحظات الإدارة', 'Admin Notes')}</label>
@@ -454,6 +486,12 @@ function Maintenance({ language }: MaintenanceProps) {
                   <Flag className="w-4 h-4 text-slate-400" />
                   <span className="text-slate-600">{t('أولوية', 'Priority')}: {viewingRequest.priority || '—'}</span>
                 </div>
+                {viewingRequest.tenantName && (
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-600">{t('مقدم الطلب', 'Submitted By')}: {viewingRequest.tenantName}</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-2">
@@ -480,12 +518,17 @@ function Maintenance({ language }: MaintenanceProps) {
 
               {viewingRequest.rating ? (
                 <div className="p-3 bg-amber-50 rounded-lg">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                    <span className="text-sm font-semibold text-amber-800">{viewingRequest.rating}/5</span>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                      <span className="text-sm font-semibold text-amber-800">{viewingRequest.rating}/5</span>
+                    </div>
+                    {viewingRequest.ratingComment && (
+                      <span className="text-xs text-amber-600">{t('تعليق', 'Comment')}</span>
+                    )}
                   </div>
                   {viewingRequest.ratingComment && (
-                    <p className="text-sm text-amber-700">{viewingRequest.ratingComment}</p>
+                    <p className="text-sm text-amber-700 mt-1 italic">"{viewingRequest.ratingComment}"</p>
                   )}
                 </div>
               ) : null}
