@@ -267,8 +267,7 @@ export interface TenantModel {
   nationality?: string;
   houseId?: string;
   isActive?: boolean;
-  deposit?: number;
-  waterMeter?: string;
+  waterCost?: number;
   electricityMeter?: string;
   idImage?: string;
   contractDocument?: string;

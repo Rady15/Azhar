@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Plus, Edit, Trash2, Eye, X, User, Phone, Home, Calendar, Loader2, Hash, Flag, DollarSign, CreditCard, FileText, LayoutList, Grid3X3, Camera, FileUp, Droplets, Zap, Shield } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, X, User, Phone, Home, Calendar, Loader2, Hash, Flag, DollarSign, CreditCard, FileText, LayoutList, Grid3X3, Camera, FileUp, Droplets, Zap } from 'lucide-react'
 import { api } from '../services/api'
 
 interface Tenant {
@@ -18,8 +18,7 @@ interface Tenant {
   nationalId: string
   nationality: string
   isActive: boolean
-  deposit?: number
-  waterMeter?: string
+  waterCost?: number
   electricityMeter?: string
   idImage?: string
   contractDocument?: string
@@ -68,8 +67,7 @@ function Tenants({ language }: TenantsProps) {
     nationalId: item.nationalId || '',
     nationality: item.nationality || '',
     isActive: item.isActive !== false,
-    deposit: item.deposit ?? 0,
-    waterMeter: item.waterMeter || '',
+    waterCost: item.waterCost ?? 0,
     electricityMeter: item.electricityMeter || '',
     idImage: item.idImage || '',
     contractDocument: item.contractDocument || ''
@@ -91,8 +89,7 @@ function Tenants({ language }: TenantsProps) {
     nationalId: tenant.nationalId || '',
     nationality: tenant.nationality || '',
     isActive: tenant.isActive ?? true,
-    deposit: tenant.deposit ?? 0,
-    waterMeter: tenant.waterMeter || '',
+    waterCost: tenant.waterCost ?? 0,
     electricityMeter: tenant.electricityMeter || ''
   })
 
@@ -141,7 +138,7 @@ function Tenants({ language }: TenantsProps) {
       fullName: '', email: '', password: '', phoneNumber: '',
       houseId: '', houseNumber: '', contractNumber: '', contractStartDate: '', contractEndDate: '',
       monthlyRent: 0, paymentDueDay: 1, nationalId: '', nationality: '',
-      isActive: true, deposit: 0, waterMeter: '', electricityMeter: ''
+      isActive: true, waterCost: 0, electricityMeter: ''
     })
     setIdImageFile(null)
     setContractFile(null)
@@ -411,14 +408,10 @@ function Tenants({ language }: TenantsProps) {
                   <option value="false">{t('غير نشط', 'Inactive')}</option>
                 </select>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('التأمين', 'Deposit')}</label>
-                  <input type="number" value={formData.deposit || ''} onChange={e => setFormData({ ...formData, deposit: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" placeholder={t('مبلغ التأمين', 'Deposit amount')} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('عداد الماء', 'Water Meter')}</label>
-                  <input type="text" value={formData.waterMeter || ''} onChange={e => setFormData({ ...formData, waterMeter: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" placeholder={t('رقم العداد', 'Meter number')} />
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('تكاليف الماء', 'Water Cost')}</label>
+                  <input type="number" value={formData.waterCost || ''} onChange={e => setFormData({ ...formData, waterCost: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" placeholder={t('التكلفة', 'Cost')} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('عداد الكهرباء', 'Electricity Meter')}</label>
@@ -529,18 +522,12 @@ function Tenants({ language }: TenantsProps) {
                     <span className="text-sm text-slate-600">{t('يوم الدفع', 'Due Day')}: {viewingTenant.paymentDueDay}</span>
                   </div>
                 )}
-                {viewingTenant.deposit ? (
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('التأمين', 'Deposit')}: {viewingTenant.deposit.toLocaleString()} {t('ج.م', 'EGP')}</span>
-                  </div>
-                ) : null}
-                {viewingTenant.waterMeter && (
+                {viewingTenant.waterCost ? (
                   <div className="flex items-center gap-2">
                     <Droplets className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('عداد الماء', 'Water')}: {viewingTenant.waterMeter}</span>
+                    <span className="text-sm text-slate-600">{t('تكاليف الماء', 'Water Cost')}: {viewingTenant.waterCost.toLocaleString()} {t('ج.م', 'EGP')}</span>
                   </div>
-                )}
+                ) : null}
                 {viewingTenant.electricityMeter && (
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-slate-400" />
