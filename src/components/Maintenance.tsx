@@ -165,7 +165,12 @@ function Maintenance({ language }: MaintenanceProps) {
       }
 
       if (editingRequest) {
-        await api.updateMaintenance(String(editingRequest.id), payload)
+        const maintenanceStatusMap: Record<string, number> = { Submitted: 0, InProgress: 1, Completed: 2, Rejected: 3 }
+        await api.updateMaintenanceStatus(String(editingRequest.id), {
+          Status: maintenanceStatusMap[formData.status || 'Submitted'] ?? 0,
+          AdminNotes: formData.adminNotes || '',
+          assignedToId: formData.assignedToId || editingRequest.assignedToId || ''
+        })
         setRequests(requests.map(r => r.id === editingRequest.id ? { ...r, ...formData } as MaintenanceRequest : r))
       } else {
         const newBackend = await api.createMaintenance(payload)
