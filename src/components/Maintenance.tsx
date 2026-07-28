@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, Edit, Trash2, Eye, X, Home, Loader2, Calendar, DollarSign, Wrench, Star, Upload, Flag, UserCircle, LayoutList, Grid3X3, User } from 'lucide-react'
 import { api, MaintenanceModel, StaffModel, API_BASE_URL } from '../services/api'
+import CurrencySymbol from './CurrencySymbol'
 
 interface MaintenanceRequest extends MaintenanceModel {
   _priority: 'low' | 'medium' | 'high' | 'urgent'
@@ -275,7 +276,7 @@ function Maintenance({ language }: MaintenanceProps) {
                   <td className="py-3 px-4">{getPriorityBadge(request.priority || 'Medium')}</td>
                   <td className="py-3 px-4">{getStatusBadge(request.status)}</td>
                   <td className="py-3 px-4 text-slate-700 text-sm">{request.assignedToName || '—'}</td>
-                  <td className="py-3 px-4 text-slate-700">{request.cost ? `${request.cost} ${t('ج.م', 'EGP')}` : '—'}</td>
+                  <td className="py-3 px-4 text-slate-700">{request.cost ? <>{request.cost} <CurrencySymbol /></> : '—'}</td>
                   <td className="py-3 px-4">
                     {request.rating ? (
                       <span className="flex items-center gap-1 text-amber-600 text-sm">
@@ -310,7 +311,7 @@ function Maintenance({ language }: MaintenanceProps) {
               <div className="space-y-2 text-sm text-slate-600 mb-3">
                 <div className="flex justify-between"><span className="text-slate-400">{t('التصنيف', 'Category')}</span><span>{request.category || '—'}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">{t('المنزل', 'House')}</span><span>{request.houseNumber || request.villaNumber || '—'}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">{t('التكلفة', 'Cost')}</span><span className="font-medium">{request.cost ? `${request.cost} ${t('ج.م', 'EGP')}` : '—'}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">{t('التكلفة', 'Cost')}</span><span className="font-medium">{request.cost ? <>{request.cost} <CurrencySymbol /></> : '—'}</span></div>
                 {request.assignedToName && <div className="flex justify-between"><span className="text-slate-400">{t('مسؤول', 'Assigned')}</span><span>{request.assignedToName}</span></div>}
                 {request.rating ? (
                   <div className="flex justify-between"><span className="text-slate-400">{t('التقييم', 'Rating')}</span><span className="flex items-center gap-1 text-amber-600"><Star className="w-3.5 h-3.5 fill-amber-500" />{request.rating}</span></div>
@@ -483,7 +484,7 @@ function Maintenance({ language }: MaintenanceProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">{t('تكلفة', 'Cost')}: {viewingRequest.cost ? `${viewingRequest.cost} ${t('ج.م', 'EGP')}` : '—'}</span>
+                  <span className="text-slate-600">{t('تكلفة', 'Cost')}: {viewingRequest.cost ? <>{viewingRequest.cost} <CurrencySymbol /></> : '—'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-slate-400" />

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Plus, Edit, Trash2, Eye, X, User, Phone, Home, Calendar, Loader2, Hash, Flag, DollarSign, CreditCard, FileText, LayoutList, Grid3X3, Camera, FileUp, Droplets, Zap } from 'lucide-react'
 import { api } from '../services/api'
+import CurrencySymbol from './CurrencySymbol'
 
 interface Tenant {
   id: string | number
@@ -272,7 +273,7 @@ function Tenants({ language }: TenantsProps) {
                   <td className="py-3 px-4 text-slate-700">{tenant.nationality || '—'}</td>
                   <td className="py-3 px-4 text-slate-700">{tenant.contractNumber}</td>
                   <td className="py-3 px-4 text-slate-700">
-                    {tenant.annualRent ? `${tenant.annualRent.toLocaleString()} ${t('ج.م', 'EGP')}` : tenant.monthlyRent ? `${tenant.monthlyRent.toLocaleString()} ${t('ج.م/شهر', 'EGP/mo')}` : '—'}
+                    {tenant.annualRent ? <>{tenant.annualRent.toLocaleString()} <CurrencySymbol /></> : tenant.monthlyRent ? <>{tenant.monthlyRent.toLocaleString()} <CurrencySymbol /></> : '—'}
                     {tenant.paymentMethod && <span className="block text-xs text-slate-400">{tenant.paymentMethod}</span>}
                   </td>
                   <td className="py-3 px-4">
@@ -309,7 +310,7 @@ function Tenants({ language }: TenantsProps) {
                   <div className="flex justify-between"><span className="text-slate-400">{t('المنزل', 'House')}</span><span>{tenant.houseNumber}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">{t('الجنسية', 'Nationality')}</span><span>{tenant.nationality || '—'}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">{t('العقد', 'Contract')}</span><span>{tenant.contractNumber}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">{t('الإيجار السنوي', 'Annual Rent')}</span><span className="font-medium">{tenant.annualRent ? `${tenant.annualRent.toLocaleString()} ${t('ج.م', 'EGP')}` : (tenant.monthlyRent ? `${tenant.monthlyRent.toLocaleString()} ${t('ج.م/شهر', 'EGP/mo')}` : '—')}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">{t('الإيجار السنوي', 'Annual Rent')}</span><span className="font-medium">{tenant.annualRent ? <>{tenant.annualRent.toLocaleString()} <CurrencySymbol /></> : (tenant.monthlyRent ? <>{tenant.monthlyRent.toLocaleString()} <CurrencySymbol /></> : '—')}</span></div>
                   {tenant.paymentMethod && <div className="flex justify-between"><span className="text-slate-400">{t('طريقة الدفع', 'Payment')}</span><span>{tenant.paymentMethod}</span></div>}
                 </div>
               <div className="flex items-center justify-between pt-3 border-t border-slate-100">
@@ -539,13 +540,13 @@ function Tenants({ language }: TenantsProps) {
                 {viewingTenant.monthlyRent > 0 && (
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('إيجار شهري', 'Monthly Rent')}: {viewingTenant.monthlyRent.toLocaleString()} {t('ج.م', 'EGP')}</span>
+                    <span className="text-sm text-slate-600">{t('إيجار شهري', 'Monthly Rent')}: {viewingTenant.monthlyRent.toLocaleString()} <CurrencySymbol /></span>
                   </div>
                 )}
                 {viewingTenant.annualRent > 0 && (
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('إيجار سنوي', 'Annual Rent')}: {viewingTenant.annualRent.toLocaleString()} {t('ج.م', 'EGP')}</span>
+                    <span className="text-sm text-slate-600">{t('إيجار سنوي', 'Annual Rent')}: {viewingTenant.annualRent.toLocaleString()} <CurrencySymbol /></span>
                   </div>
                 )}
                 {viewingTenant.paymentMethod && (
@@ -563,7 +564,7 @@ function Tenants({ language }: TenantsProps) {
                 {viewingTenant.waterCost ? (
                   <div className="flex items-center gap-2">
                     <Droplets className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('تكاليف الماء', 'Water Cost')}: {viewingTenant.waterCost.toLocaleString()} {t('ج.م', 'EGP')}</span>
+                    <span className="text-sm text-slate-600">{t('تكاليف الماء', 'Water Cost')}: {viewingTenant.waterCost.toLocaleString()} <CurrencySymbol /></span>
                   </div>
                 ) : null}
                 {viewingTenant.electricityMeter && (

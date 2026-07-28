@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Download, Users, Home, Wrench, CreditCard, TrendingUp, Loader2, AlertCircle, RefreshCcw, ChevronDown, BarChart3, PieChart } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { api } from '../services/api'
+import CurrencySymbol, { CURRENCY_HTML } from './CurrencySymbol'
 
 interface ReportsProps {
   language: 'AR' | 'EN'
@@ -33,7 +34,7 @@ function Reports({ language }: ReportsProps) {
 
   const ar = language === 'AR'
   const t = (a: string, e: string) => ar ? a : e
-  const currency = t('ج.م', 'EGP')
+  const currency = CURRENCY_HTML
 
   const reportTitles: Record<string, { ar: string; en: string }> = {
     revenue: { ar: 'تقرير الإيرادات والدخل', en: 'Revenue & Income Report' },
@@ -517,7 +518,7 @@ function Reports({ language }: ReportsProps) {
       </div>
     )
 
-    const Card = ({ label, value, color, icon }: { label: string; value: string; color: string; icon?: React.ReactNode }) => (
+    const Card = ({ label, value, color, icon }: { label: string; value: string | React.ReactNode; color: string; icon?: React.ReactNode }) => (
       <div className="rounded-xl p-5 border transition-all hover:shadow-md" style={{ background: `${color}08`, borderColor: `${color}25` }}>
         <div className="flex items-center gap-2 mb-2">
           {icon}
@@ -597,11 +598,11 @@ function Reports({ language }: ReportsProps) {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100">
                     <span className="text-sm text-slate-500">{t('إجمالي التكاليف', 'Total Costs')}</span>
-                    <span className="text-lg font-bold text-slate-800">{stats.maintenance.totalCost.toLocaleString()} {currency}</span>
+                    <span className="text-lg font-bold text-slate-800">{stats.maintenance.totalCost.toLocaleString()} <CurrencySymbol /></span>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-100">
                     <span className="text-sm text-slate-500">{t('متوسط التكلفة', 'Avg Cost')}</span>
-                    <span className="text-lg font-bold text-slate-800">{stats.maintenance.averageCost.toLocaleString()} {currency}</span>
+                    <span className="text-lg font-bold text-slate-800">{stats.maintenance.averageCost.toLocaleString()} <CurrencySymbol /></span>
                   </div>
                 </div>
               </div>
@@ -613,9 +614,9 @@ function Reports({ language }: ReportsProps) {
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-3 gap-4">
-              <Card label={t('الإجمالي', 'Total')} value={`${stats.payments.total.toLocaleString()} ${currency}`} color="#3b82f6" icon={<CreditCard className="w-4 h-4" />} />
-              <Card label={t('مدفوع', 'Paid')} value={`${stats.payments.paid.toLocaleString()} ${currency}`} color="#22c55e" />
-              <Card label={t('معلق', 'Pending')} value={`${stats.payments.pending.toLocaleString()} ${currency}`} color="#f59e0b" />
+              <Card label={t('الإجمالي', 'Total')} value={<>{stats.payments.total.toLocaleString()} <CurrencySymbol /></>} color="#3b82f6" icon={<CreditCard className="w-4 h-4" />} />
+              <Card label={t('مدفوع', 'Paid')} value={<>{stats.payments.paid.toLocaleString()} <CurrencySymbol /></>} color="#22c55e" />
+              <Card label={t('معلق', 'Pending')} value={<>{stats.payments.pending.toLocaleString()} <CurrencySymbol /></>} color="#f59e0b" />
             </div>
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
               <div className="flex items-center gap-6">
@@ -637,12 +638,12 @@ function Reports({ language }: ReportsProps) {
               <div className="rounded-xl p-6 border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
                 <p className="text-sm font-semibold text-green-600 uppercase tracking-wide mb-2">{t('الدخل الشهري', 'Monthly Revenue')}</p>
                 <p className="text-4xl font-extrabold text-green-700">{stats.revenue.monthly.toLocaleString()}</p>
-                <p className="text-sm text-slate-500 mt-1">{currency}</p>
+                <p className="text-sm text-slate-500 mt-1"><CurrencySymbol /></p>
               </div>
               <div className="rounded-xl p-6 border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
                 <p className="text-sm font-semibold text-blue-600 uppercase tracking-wide mb-2">{t('الدخل السنوي', 'Yearly Revenue')}</p>
                 <p className="text-4xl font-extrabold text-blue-700">{stats.revenue.yearly.toLocaleString()}</p>
-                <p className="text-sm text-slate-500 mt-1">{currency}</p>
+                <p className="text-sm text-slate-500 mt-1"><CurrencySymbol /></p>
               </div>
             </div>
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 flex items-center gap-5">

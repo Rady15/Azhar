@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, Eye, X, User, Home, Send, LayoutList, Grid3X3, DollarSign, Tag, FileText, Calendar, Building2, Phone, Mail, CheckCircle, XCircle } from 'lucide-react'
 import { api } from '../services/api'
+import CurrencySymbol from './CurrencySymbol'
 
 interface Payment {
   id: string | number
@@ -491,21 +492,21 @@ function Payments({ language }: PaymentsProps) {
       {/* Summary Cards */}
       {activeSection === 'payments' ? (
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="p-4 bg-green-50 rounded-xl"><p className="text-sm text-green-600">{t('المدفوع', 'Paid')}</p><p className="text-xl font-bold text-green-700">{totalPaid.toLocaleString()} {t('ج.م', 'EGP')}</p></div>
-          <div className="p-4 bg-amber-50 rounded-xl"><p className="text-sm text-amber-600">{t('المعلق', 'Pending')}</p><p className="text-xl font-bold text-amber-700">{totalPending.toLocaleString()} {t('ج.م', 'EGP')}</p></div>
-          <div className="p-4 bg-blue-50 rounded-xl"><p className="text-sm text-blue-600">{t('الإجمالي', 'Total')}</p><p className="text-xl font-bold text-blue-700">{(totalPaid + totalPending).toLocaleString()} {t('ج.م', 'EGP')}</p></div>
+          <div className="p-4 bg-green-50 rounded-xl"><p className="text-sm text-green-600">{t('المدفوع', 'Paid')}</p><p className="text-xl font-bold text-green-700">{totalPaid.toLocaleString()} <CurrencySymbol /></p></div>
+          <div className="p-4 bg-amber-50 rounded-xl"><p className="text-sm text-amber-600">{t('المعلق', 'Pending')}</p><p className="text-xl font-bold text-amber-700">{totalPending.toLocaleString()} <CurrencySymbol /></p></div>
+          <div className="p-4 bg-blue-50 rounded-xl"><p className="text-sm text-blue-600">{t('الإجمالي', 'Total')}</p><p className="text-xl font-bold text-blue-700">{(totalPaid + totalPending).toLocaleString()} <CurrencySymbol /></p></div>
         </div>
       ) : activeSection === 'expenses' ? (
         <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="p-4 bg-red-50 rounded-xl"><p className="text-sm text-red-600">{t('إجمالي المصروفات', 'Total Expenses')}</p><p className="text-xl font-bold text-red-700">{totalExpenses.toLocaleString()} {t('ج.م', 'EGP')}</p></div>
+          <div className="p-4 bg-red-50 rounded-xl"><p className="text-sm text-red-600">{t('إجمالي المصروفات', 'Total Expenses')}</p><p className="text-xl font-bold text-red-700">{totalExpenses.toLocaleString()} <CurrencySymbol /></p></div>
           <div className="p-4 bg-blue-50 rounded-xl"><p className="text-sm text-blue-600">{t('عدد المصروفات', 'Expense Count')}</p><p className="text-xl font-bold text-blue-700">{expenses.length}</p></div>
         </div>
       ) : (
         <div className="grid grid-cols-4 gap-4 mb-6">
           <div className="p-4 bg-blue-50 rounded-xl"><p className="text-sm text-blue-600">{t('عدد الشركات', 'Companies')}</p><p className="text-xl font-bold text-blue-700">{companies.length}</p></div>
-          <div className="p-4 bg-indigo-50 rounded-xl"><p className="text-sm text-indigo-600">{t('إجمالي العقود', 'Total Contracts')}</p><p className="text-xl font-bold text-indigo-700">{companyTotalContracts.toLocaleString()} {t('ج.م', 'EGP')}</p></div>
-          <div className="p-4 bg-green-50 rounded-xl"><p className="text-sm text-green-600">{t('المدفوع للشركات', 'Paid')}</p><p className="text-xl font-bold text-green-700">{companyTotalPaid.toLocaleString()} {t('ج.م', 'EGP')}</p></div>
-          <div className="p-4 bg-amber-50 rounded-xl"><p className="text-sm text-amber-600">{t('المتبقي', 'Remaining')}</p><p className="text-xl font-bold text-amber-700">{companyTotalRemaining.toLocaleString()} {t('ج.م', 'EGP')}</p></div>
+          <div className="p-4 bg-indigo-50 rounded-xl"><p className="text-sm text-indigo-600">{t('إجمالي العقود', 'Total Contracts')}</p><p className="text-xl font-bold text-indigo-700">{companyTotalContracts.toLocaleString()} <CurrencySymbol /></p></div>
+          <div className="p-4 bg-green-50 rounded-xl"><p className="text-sm text-green-600">{t('المدفوع للشركات', 'Paid')}</p><p className="text-xl font-bold text-green-700">{companyTotalPaid.toLocaleString()} <CurrencySymbol /></p></div>
+          <div className="p-4 bg-amber-50 rounded-xl"><p className="text-sm text-amber-600">{t('المتبقي', 'Remaining')}</p><p className="text-xl font-bold text-amber-700">{companyTotalRemaining.toLocaleString()} <CurrencySymbol /></p></div>
         </div>
       )}
 
@@ -536,7 +537,7 @@ function Payments({ language }: PaymentsProps) {
                 <tr key={payment.id} className="border-b border-slate-100 hover:bg-slate-50">
                   <td className="py-3 px-4 text-slate-700">{payment.tenantName}</td>
                   <td className="py-3 px-4 text-slate-700">{payment.villaNumber}</td>
-                  <td className="py-3 px-4 text-slate-700 font-medium">{payment.amount.toLocaleString()} {t('ج.م', 'EGP')}</td>
+                  <td className="py-3 px-4 text-slate-700 font-medium">{payment.amount.toLocaleString()} <CurrencySymbol /></td>
                   <td className="py-3 px-4 text-slate-700">{payment.month} {payment.year}</td>
                   <td className="py-3 px-4">{getStatusBadge(payment.status)}</td>
                   <td className="py-3 px-4">
@@ -566,7 +567,7 @@ function Payments({ language }: PaymentsProps) {
                 </div>
                 {getStatusBadge(payment.status)}
               </div>
-              <p className="text-2xl font-bold text-primary-700 mb-3">{payment.amount.toLocaleString()} {t('ج.م', 'EGP')}</p>
+              <p className="text-2xl font-bold text-primary-700 mb-3">{payment.amount.toLocaleString()} <CurrencySymbol /></p>
               <div className="space-y-2 text-sm text-slate-600 mb-3">
                 <div className="flex justify-between"><span className="text-slate-400">{t('الشهر', 'Month')}</span><span>{payment.month} {payment.year}</span></div>
               </div>
@@ -603,7 +604,7 @@ function Payments({ language }: PaymentsProps) {
                   <td className="py-3 px-4">
                     <span className="px-2 py-0.5 bg-slate-100 rounded text-xs text-slate-600">{getCategoryLabel(expense.category)}</span>
                   </td>
-                  <td className="py-3 px-4 text-red-600 font-medium">{expense.amount.toLocaleString()} {t('ج.م', 'EGP')}</td>
+                  <td className="py-3 px-4 text-red-600 font-medium">{expense.amount.toLocaleString()} <CurrencySymbol /></td>
                   <td className="py-3 px-4 text-slate-600 text-sm">{expense.date}</td>
                   <td className="py-3 px-4 text-slate-600 text-xs">{getMethodLabel(expense.paymentMethod)}</td>
                   <td className="py-3 px-4">
@@ -647,7 +648,7 @@ function Payments({ language }: PaymentsProps) {
                     </td>
                     <td className="py-3 px-4 text-slate-700">{company.contactPerson || '—'}</td>
                     <td className="py-3 px-4 text-slate-700">{company.phone || '—'}</td>
-                    <td className="py-3 px-4 text-slate-700 font-medium">{totalContractValue.toLocaleString()} {t('ج.م', 'EGP')}</td>
+                    <td className="py-3 px-4 text-slate-700 font-medium">{totalContractValue.toLocaleString()} <CurrencySymbol /></td>
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
                         <button onClick={() => handleViewCompany(company)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-4 h-4" /></button>
@@ -901,9 +902,9 @@ function Payments({ language }: PaymentsProps) {
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-2 mb-3 text-sm">
-                        <div><span className="text-slate-400">{t('الإجمالي', 'Total')}</span><p className="font-semibold text-slate-700">{contract.totalAmount.toLocaleString()} {t('ج.م', 'EGP')}</p></div>
-                        <div><span className="text-green-600">{t('المدفوع', 'Paid')}</span><p className="font-semibold text-green-700">{paid.toLocaleString()} {t('ج.م', 'EGP')}</p></div>
-                        <div><span className="text-amber-600">{t('المتبقي', 'Remaining')}</span><p className="font-semibold text-amber-700">{remaining.toLocaleString()} {t('ج.م', 'EGP')}</p></div>
+                        <div><span className="text-slate-400">{t('الإجمالي', 'Total')}</span><p className="font-semibold text-slate-700">{contract.totalAmount.toLocaleString()} <CurrencySymbol /></p></div>
+                        <div><span className="text-green-600">{t('المدفوع', 'Paid')}</span><p className="font-semibold text-green-700">{paid.toLocaleString()} <CurrencySymbol /></p></div>
+                        <div><span className="text-amber-600">{t('المتبقي', 'Remaining')}</span><p className="font-semibold text-amber-700">{remaining.toLocaleString()} <CurrencySymbol /></p></div>
                       </div>
                       <div className="text-xs text-slate-400 mb-2">
                         {contract.startDate} → {contract.endDate}
@@ -918,7 +919,7 @@ function Payments({ language }: PaymentsProps) {
                               <div key={inst.id} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg text-sm">
                                 <div className="flex items-center gap-2">
                                   <span className="w-6 h-6 rounded-full bg-slate-200 text-xs flex items-center justify-center text-slate-600">{idx + 1}</span>
-                                  <span className="font-medium text-slate-700">{inst.amount.toLocaleString()} {t('ج.م', 'EGP')}</span>
+                                  <span className="font-medium text-slate-700">{inst.amount.toLocaleString()} <CurrencySymbol /></span>
                                   <span className="text-slate-400 text-xs">{inst.dueDate}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -951,7 +952,7 @@ function Payments({ language }: PaymentsProps) {
                               onClick={() => handlePayInstallment(contract.id, contract.installments[0]?.id)}
                               className="px-4 py-2 bg-green-100 text-green-700 rounded-xl text-sm hover:bg-green-200 font-medium"
                             >
-                              {t('تسديد الدفعة كاملة', 'Pay Full Amount')} ({contract.installments[0]?.amount.toLocaleString()} {t('ج.م', 'EGP')})
+                              {t('تسديد الدفعة كاملة', 'Pay Full Amount')} ({contract.installments[0]?.amount.toLocaleString()} <CurrencySymbol />)
                             </button>
                           )}
                         </div>
@@ -1002,7 +1003,7 @@ function Payments({ language }: PaymentsProps) {
                   </select>
                   {contractFormData.totalAmount && contractFormData.installmentCount && (
                     <p className="text-xs text-slate-400 mt-1">
-                      {t('قيمة كل قسط:', 'Each installment:')} {Math.round((contractFormData.totalAmount || 0) / (contractFormData.installmentCount || 1)).toLocaleString()} {t('ج.م', 'EGP')}
+                      {t('قيمة كل قسط:', 'Each installment:')} {Math.round((contractFormData.totalAmount || 0) / (contractFormData.installmentCount || 1)).toLocaleString()} <CurrencySymbol />
                     </p>
                   )}
                 </div>
@@ -1032,7 +1033,7 @@ function Payments({ language }: PaymentsProps) {
             <div className="space-y-3">
               <div className="flex items-center gap-2"><User className="w-4 h-4 text-slate-400" /><span className="text-sm">{viewingPayment.tenantName}</span></div>
               <div className="flex items-center gap-2"><Home className="w-4 h-4 text-slate-400" /><span className="text-sm">{t('وحدة', 'Unit')} {viewingPayment.villaNumber}</span></div>
-              <div className="p-4 bg-primary-50 rounded-xl"><p className="text-sm text-slate-600">{t('المبلغ', 'Amount')}</p><p className="text-2xl font-bold text-primary-700">{viewingPayment.amount.toLocaleString()} {t('ج.م', 'EGP')}</p></div>
+              <div className="p-4 bg-primary-50 rounded-xl"><p className="text-sm text-slate-600">{t('المبلغ', 'Amount')}</p><p className="text-2xl font-bold text-primary-700">{viewingPayment.amount.toLocaleString()} <CurrencySymbol /></p></div>
               <div className="grid grid-cols-2 gap-2 text-sm"><div><p className="text-slate-400">{t('الشهر', 'Month')}</p><p>{viewingPayment.month} {viewingPayment.year}</p></div><div><p className="text-slate-400">{t('الطريقة', 'Method')}</p><p>{getMethodLabel(viewingPayment.paymentMethod)}</p></div></div>
               {viewingPayment.paymentDate && <div className="text-sm"><p className="text-slate-400">{t('تاريخ الدفع', 'Payment Date')}</p><p>{viewingPayment.paymentDate}</p></div>}
               {getStatusBadge(viewingPayment.status)}
@@ -1050,7 +1051,7 @@ function Payments({ language }: PaymentsProps) {
             <div className="space-y-3">
               <div className="flex items-center gap-2"><FileText className="w-4 h-4 text-slate-400" /><span className="text-sm font-medium">{viewingExpense.description}</span></div>
               <div className="flex items-center gap-2"><Tag className="w-4 h-4 text-slate-400" /><span className="px-2 py-0.5 bg-slate-100 rounded text-xs text-slate-600">{getCategoryLabel(viewingExpense.category)}</span></div>
-              <div className="p-4 bg-red-50 rounded-xl"><p className="text-sm text-slate-600">{t('المبلغ', 'Amount')}</p><p className="text-2xl font-bold text-red-700">{viewingExpense.amount.toLocaleString()} {t('ج.م', 'EGP')}</p></div>
+              <div className="p-4 bg-red-50 rounded-xl"><p className="text-sm text-slate-600">{t('المبلغ', 'Amount')}</p><p className="text-2xl font-bold text-red-700">{viewingExpense.amount.toLocaleString()} <CurrencySymbol /></p></div>
               <div className="flex items-center gap-2 text-sm"><Calendar className="w-4 h-4 text-slate-400" /><span className="text-slate-600">{viewingExpense.date}</span></div>
               <div className="flex items-center gap-2 text-sm"><DollarSign className="w-4 h-4 text-slate-400" /><span className="text-slate-600">{getMethodLabel(viewingExpense.paymentMethod)}</span></div>
               {viewingExpense.notes && <div className="p-3 bg-slate-50 rounded-lg text-sm text-slate-600">{viewingExpense.notes}</div>}
