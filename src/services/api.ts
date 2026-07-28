@@ -421,7 +421,7 @@ export const api = {
   },
 
   async updateMaintenance(id: string, data: Record<string, any>): Promise<MaintenanceModel> {
-    return request<MaintenanceModel>('PUT', `/api/Maintenance/${id}`, data);
+    return formDataRequest<MaintenanceModel>('PUT', `/api/Maintenance/${id}`, data);
   },
 
   async deleteMaintenance(id: string): Promise<any> {
