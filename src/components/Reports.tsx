@@ -91,17 +91,155 @@ function Reports({ language }: ReportsProps) {
     fetchReports()
   }, [])
 
-  const handleDownload = () => {
-    const reportData = {
-      generatedAt: new Date().toISOString(),
-      selectedReport,
-      data: stats,
+  const handleDownload = async () => {
+    let logoBase64 = ''
+    try {
+      const res = await fetch('/logo.png')
+      const blob = await res.blob()
+      logoBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.readAsDataURL(blob)
+      })
+    } catch {}
+
+    const now = new Date()
+    const dateStr = now.toLocaleDateString(language === 'AR' ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    const timeStr = now.toLocaleTimeString(language === 'AR' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })
+
+    const ar = language === 'AR'
+    const reportTitles: Record<string, { ar: string; en: string }> = {
+      revenue: { ar: 'تقرير الإيرادات', en: 'Revenue Report' },
+      tenants: { ar: 'تقرير المستأجرين', en: 'Tenants Report' },
+      villas: { ar: 'تقرير الفلل', en: 'Villas Report' },
+      maintenance: { ar: 'تقرير الصيانة', en: 'Maintenance Report' },
+      payments: { ar: 'تقرير المدفوعات', en: 'Payments Report' },
     }
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' })
+    const title = ar ? reportTitles[selectedReport]?.ar : reportTitles[selectedReport]?.en
+
+    const buildCards = (items: { label: string; value: string; color: string }[]) =>
+      items.map(i => `
+        <div style="flex:1;min-width:140px;background:${i.color}10;border:1px solid ${i.color}30;border-radius:12px;padding:16px;text-align:center;">
+          <div style="font-size:13px;color:${i.color};margin-bottom:6px;">${i.label}</div>
+          <div style="font-size:24px;font-weight:700;color:${i.color};">${i.value}</div>
+        </div>
+      `).join('')
+
+    const buildBar = (label: string, pct: number, color: string) => `
+      <div style="margin-top:12px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:13px;color:#64748b;">${label}</span>
+          <span style="font-size:13px;font-weight:600;color:${color};">${pct}%</span>
+        </div>
+        <div style="width:100%;height:10px;background:#e2e8f0;border-radius:99px;overflow:hidden;">
+          <div style="width:${pct}%;height:100%;background:${color};border-radius:99px;"></div>
+        </div>
+      </div>
+    `
+
+    let bodyContent = ''
+    switch (selectedReport) {
+      case 'tenants':
+        bodyContent = buildCards([
+          { label: ar ? 'إجمالي المستأجرين' : 'Total Tenants', value: String(stats.tenants.total), color: '#3b82f6' },
+          { label: ar ? 'نشط' : 'Active', value: String(stats.tenants.active), color: '#22c55e' },
+          { label: ar ? 'غير نشط' : 'Inactive', value: String(stats.tenants.inactive), color: '#94a3b8' },
+        ]) + buildBar(ar ? 'نسبة النشاط' : 'Activity Rate', Math.round((stats.tenants.active / (stats.tenants.total || 1)) * 100), '#22c55e')
+        break
+      case 'villas':
+        bodyContent = buildCards([
+          { label: ar ? 'إجمالي الفلل' : 'Total Villas', value: String(stats.villas.total), color: '#3b82f6' },
+          { label: ar ? 'متاحة' : 'Available', value: String(stats.villas.available), color: '#22c55e' },
+          { label: ar ? 'مؤجرة' : 'Occupied', value: String(stats.villas.occupied), color: '#a855f7' },
+          { label: ar ? 'صيانة' : 'Maintenance', value: String(stats.villas.maintenance), color: '#f59e0b' },
+        ]) + buildBar(ar ? 'نسبة الإشغال' : 'Occupancy Rate', Math.round((stats.villas.occupied / (stats.villas.total || 1)) * 100), '#a855f7')
+        break
+      case 'maintenance':
+        bodyContent = buildCards([
+          { label: ar ? 'الإجمالي' : 'Total', value: String(stats.maintenance.total), color: '#94a3b8' },
+          { label: ar ? 'قيد الانتظار' : 'Pending', value: String(stats.maintenance.pending), color: '#f59e0b' },
+          { label: ar ? 'قيد العمل' : 'In Progress', value: String(stats.maintenance.inProgress), color: '#3b82f6' },
+          { label: ar ? 'مكتمل' : 'Completed', value: String(stats.maintenance.completed), color: '#22c55e' },
+        ]) + `
+          <div style="margin-top:16px;padding:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">
+            <div style="font-weight:600;color:#1e293b;margin-bottom:8px;">${ar ? 'التكاليف' : 'Costs'}</div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9;font-size:14px;">
+              <span style="color:#64748b;">${ar ? 'إجمالي التكاليف' : 'Total Costs'}</span>
+              <span style="font-weight:600;color:#1e293b;">${stats.maintenance.totalCost.toLocaleString()} ${ar ? 'ج.م' : 'EGP'}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:14px;">
+              <span style="color:#64748b;">${ar ? 'متوسط التكلفة' : 'Average Cost'}</span>
+              <span style="font-weight:600;color:#1e293b;">${stats.maintenance.averageCost.toLocaleString()} ${ar ? 'ج.م' : 'EGP'}</span>
+            </div>
+          </div>`
+        break
+      case 'payments':
+        bodyContent = buildCards([
+          { label: ar ? 'الإجمالي' : 'Total', value: `${stats.payments.total.toLocaleString()} ${ar ? 'ج.م' : 'EGP'}`, color: '#3b82f6' },
+          { label: ar ? 'مدفوع' : 'Paid', value: `${stats.payments.paid.toLocaleString()} ${ar ? 'ج.م' : 'EGP'}`, color: '#22c55e' },
+          { label: ar ? 'معلق' : 'Pending', value: `${stats.payments.pending.toLocaleString()} ${ar ? 'ج.م' : 'EGP'}`, color: '#f59e0b' },
+        ]) + buildBar(ar ? 'نسبة التحصيل' : 'Collection Rate', stats.payments.collectionRate, '#22c55e')
+        break
+      case 'revenue':
+      default:
+        bodyContent = buildCards([
+          { label: ar ? 'الدخل الشهري' : 'Monthly Revenue', value: `${stats.revenue.monthly.toLocaleString()} ${ar ? 'ج.م' : 'EGP'}`, color: '#22c55e' },
+          { label: ar ? 'الدخل السنوي' : 'Yearly Revenue', value: `${stats.revenue.yearly.toLocaleString()} ${ar ? 'ج.م' : 'EGP'}`, color: '#3b82f6' },
+        ]) + `
+          <div style="margin-top:16px;padding:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;display:flex;align-items:center;gap:8px;">
+            <span style="font-size:20px;color:#22c55e;">📈</span>
+            <span style="font-size:15px;font-weight:600;color:#15803d;">+${stats.revenue.growth}%</span>
+            <span style="font-size:13px;color:#64748b;">${ar ? 'مقارنة بالشهر السابق' : 'vs last month'}</span>
+          </div>`
+        break
+    }
+
+    const html = `<!DOCTYPE html>
+<html lang="${ar ? 'ar' : 'en'}" dir="${ar ? 'rtl' : 'ltr'}">
+<head>
+<meta charset="UTF-8">
+<title>${title} - Azhar</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background:#f1f5f9; color:#1e293b; }
+  .report { max-width:800px; margin:30px auto; background:#fff; border-radius:16px; box-shadow:0 4px 24px rgba(0,0,0,0.08); overflow:hidden; }
+  .header { background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%); color:#fff; padding:32px 40px; display:flex; align-items:center; gap:20px; }
+  .header img { width:64px; height:64px; border-radius:12px; background:#fff; padding:4px; }
+  .header-text h1 { font-size:22px; font-weight:700; }
+  .header-text p { font-size:13px; opacity:0.7; margin-top:4px; }
+  .body { padding:32px 40px; }
+  .cards { display:flex; gap:12px; flex-wrap:wrap; }
+  .footer { padding:16px 40px; border-top:1px solid #e2e8f0; text-align:center; font-size:12px; color:#94a3b8; }
+  @media print {
+    body { background:#fff; }
+    .report { box-shadow:none; margin:0; border-radius:0; }
+  }
+</style>
+</head>
+<body>
+<div class="report">
+  <div class="header">
+    ${logoBase64 ? `<img src="${logoBase64}" alt="Logo" />` : ''}
+    <div class="header-text">
+      <h1>${title}</h1>
+      <p>${ar ? 'مجمع الزهراء السكني' : 'Azhar Residential Complex'} — ${dateStr} ${timeStr}</p>
+    </div>
+  </div>
+  <div class="body">
+    <div class="cards">${bodyContent}</div>
+  </div>
+  <div class="footer">
+    ${ar ? 'تم إنشاء هذا التقرير تلقائياً من نظام إدارة مجمع الزهراء' : 'This report was generated automatically from Azhar Residential Complex Management System'}
+  </div>
+</div>
+</body>
+</html>`
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `azhar-report-${selectedReport}-${new Date().toISOString().split('T')[0]}.json`
+    a.download = `azhar-report-${selectedReport}-${now.toISOString().split('T')[0]}.html`
     a.click()
     URL.revokeObjectURL(url)
   }
