@@ -14,6 +14,8 @@ interface Tenant {
   contractStartDate: string
   contractEndDate: string
   monthlyRent: number
+  annualRent: number
+  paymentMethod: string
   paymentDueDay: number
   nationalId: string
   nationality: string
@@ -63,6 +65,8 @@ function Tenants({ language }: TenantsProps) {
     contractStartDate: item.contractStartDate ? item.contractStartDate.split('T')[0] : '',
     contractEndDate: item.contractEndDate ? item.contractEndDate.split('T')[0] : '',
     monthlyRent: item.monthlyRent ?? 0,
+    annualRent: item.annualRent ?? 0,
+    paymentMethod: item.paymentMethod || '',
     paymentDueDay: item.paymentDueDay ?? 1,
     nationalId: item.nationalId || '',
     nationality: item.nationality || '',
@@ -85,6 +89,8 @@ function Tenants({ language }: TenantsProps) {
     contractStartDate: tenant.contractStartDate ? new Date(tenant.contractStartDate).toISOString() : new Date().toISOString(),
     contractEndDate: tenant.contractEndDate ? new Date(tenant.contractEndDate).toISOString() : new Date().toISOString(),
     monthlyRent: tenant.monthlyRent ?? 0,
+    annualRent: tenant.annualRent ?? 0,
+    paymentMethod: tenant.paymentMethod || '',
     paymentDueDay: tenant.paymentDueDay ?? 1,
     nationalId: tenant.nationalId || '',
     nationality: tenant.nationality || '',
@@ -137,7 +143,7 @@ function Tenants({ language }: TenantsProps) {
     setFormData({
       fullName: '', email: '', password: '', phoneNumber: '',
       houseId: '', houseNumber: '', contractNumber: '', contractStartDate: '', contractEndDate: '',
-      monthlyRent: 0, paymentDueDay: 1, nationalId: '', nationality: '',
+      monthlyRent: 0, annualRent: 0, paymentMethod: '', paymentDueDay: 1, nationalId: '', nationality: '',
       isActive: true, waterCost: 0, electricityMeter: ''
     })
     setIdImageFile(null)
@@ -266,7 +272,8 @@ function Tenants({ language }: TenantsProps) {
                   <td className="py-3 px-4 text-slate-700">{tenant.nationality || '—'}</td>
                   <td className="py-3 px-4 text-slate-700">{tenant.contractNumber}</td>
                   <td className="py-3 px-4 text-slate-700">
-                    {tenant.monthlyRent ? `${tenant.monthlyRent.toLocaleString()} ${t('ج.م', 'EGP')}` : '—'}
+                    {tenant.annualRent ? `${tenant.annualRent.toLocaleString()} ${t('ج.م', 'EGP')}` : tenant.monthlyRent ? `${tenant.monthlyRent.toLocaleString()} ${t('ج.م/شهر', 'EGP/mo')}` : '—'}
+                    {tenant.paymentMethod && <span className="block text-xs text-slate-400">{tenant.paymentMethod}</span>}
                   </td>
                   <td className="py-3 px-4">
                     <button onClick={() => handleToggleActive(tenant)} className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 ${tenant.isActive ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-red-100 text-red-700 hover:bg-red-200'}`} title={t('اضغط لتغيير الحالة', 'Click to toggle status')}>
@@ -298,12 +305,13 @@ function Tenants({ language }: TenantsProps) {
                   <p className="text-xs text-slate-400">{tenant.email}</p>
                 </div>
               </div>
-              <div className="space-y-2 text-sm text-slate-600 mb-3">
-                <div className="flex justify-between"><span className="text-slate-400">{t('المنزل', 'House')}</span><span>{tenant.houseNumber}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">{t('الجنسية', 'Nationality')}</span><span>{tenant.nationality || '—'}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">{t('العقد', 'Contract')}</span><span>{tenant.contractNumber}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">{t('الإيجار', 'Rent')}</span><span className="font-medium">{tenant.monthlyRent ? `${tenant.monthlyRent.toLocaleString()} ${t('ج.م', 'EGP')}` : '—'}</span></div>
-              </div>
+                <div className="space-y-2 text-sm text-slate-600 mb-3">
+                  <div className="flex justify-between"><span className="text-slate-400">{t('المنزل', 'House')}</span><span>{tenant.houseNumber}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">{t('الجنسية', 'Nationality')}</span><span>{tenant.nationality || '—'}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">{t('العقد', 'Contract')}</span><span>{tenant.contractNumber}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">{t('الإيجار السنوي', 'Annual Rent')}</span><span className="font-medium">{tenant.annualRent ? `${tenant.annualRent.toLocaleString()} ${t('ج.م', 'EGP')}` : (tenant.monthlyRent ? `${tenant.monthlyRent.toLocaleString()} ${t('ج.م/شهر', 'EGP/mo')}` : '—')}</span></div>
+                  {tenant.paymentMethod && <div className="flex justify-between"><span className="text-slate-400">{t('طريقة الدفع', 'Payment')}</span><span>{tenant.paymentMethod}</span></div>}
+                </div>
               <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                 <button onClick={() => handleToggleActive(tenant)} className={`px-2.5 py-1 rounded-full text-xs font-semibold ${tenant.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                   {tenant.isActive ? t('نشط', 'Active') : t('غير نشط', 'Inactive')}
@@ -395,6 +403,24 @@ function Tenants({ language }: TenantsProps) {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('الإيجار الشهري', 'Monthly Rent')}</label>
                   <input type="number" value={formData.monthlyRent || ''} onChange={e => setFormData({ ...formData, monthlyRent: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('الإيجار السنوي', 'Annual Rent')}</label>
+                  <input type="number" value={formData.annualRent || ''} onChange={e => setFormData({ ...formData, annualRent: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('طريقة الدفع', 'Payment Method')}</label>
+                  <select value={formData.paymentMethod || ''} onChange={e => setFormData({ ...formData, paymentMethod: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
+                    <option value="">-- {t('اختر طريقة', 'Select Method')} --</option>
+                    <option value="سنوي">{t('سنوي', 'Annual')}</option>
+                    <option value="نصف سنوي">{t('نصف سنوي', 'Semi-Annual')}</option>
+                    <option value="ربع سنوي">{t('ربع سنوي', 'Quarterly')}</option>
+                    <option value="شهري">{t('شهري', 'Monthly')}</option>
+                    <option value="دفعة كاملة">{t('دفعة كاملة', 'Full Payment')}</option>
+                    <option value="مرنة">{t('مرنة', 'Flexible')}</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('يوم الاستحقاق', 'Payment Due Day')}</label>
@@ -513,7 +539,19 @@ function Tenants({ language }: TenantsProps) {
                 {viewingTenant.monthlyRent > 0 && (
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('إيجار', 'Rent')}: {viewingTenant.monthlyRent.toLocaleString()} {t('ج.م', 'EGP')}</span>
+                    <span className="text-sm text-slate-600">{t('إيجار شهري', 'Monthly Rent')}: {viewingTenant.monthlyRent.toLocaleString()} {t('ج.م', 'EGP')}</span>
+                  </div>
+                )}
+                {viewingTenant.annualRent > 0 && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">{t('إيجار سنوي', 'Annual Rent')}: {viewingTenant.annualRent.toLocaleString()} {t('ج.م', 'EGP')}</span>
+                  </div>
+                )}
+                {viewingTenant.paymentMethod && (
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">{t('طريقة الدفع', 'Payment')}: {viewingTenant.paymentMethod}</span>
                   </div>
                 )}
                 {viewingTenant.paymentDueDay > 0 && (
