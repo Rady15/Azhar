@@ -425,7 +425,7 @@ export const api = {
   },
 
   async assignMaintenance(id: string, assignData: { assignedToId: string }): Promise<any> {
-    return request<any>('PUT', `/api/Maintenance/${id}/assign`, assignData);
+    return request<any>('PUT', `/api/Maintenance/${id}/assign`, { TechnicianId: assignData.assignedToId });
   },
 
   async deleteMaintenance(id: string): Promise<any> {
