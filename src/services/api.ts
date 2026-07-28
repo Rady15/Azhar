@@ -424,6 +424,10 @@ export const api = {
     return formDataRequest<MaintenanceModel>('PUT', `/api/Maintenance/${id}`, data);
   },
 
+  async assignMaintenance(id: string, assignData: { assignedToId: string }): Promise<any> {
+    return request<any>('PUT', `/api/Maintenance/${id}/assign`, assignData);
+  },
+
   async deleteMaintenance(id: string): Promise<any> {
     return request<any>('DELETE', `/api/Maintenance/${id}`);
   },
