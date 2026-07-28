@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, User, Phone, Home, Calendar, Loader2, Hash, Flag, DollarSign, CreditCard, FileText, LayoutList, Grid3X3 } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Plus, Edit, Trash2, Eye, X, User, Phone, Home, Calendar, Loader2, Hash, Flag, DollarSign, CreditCard, FileText, LayoutList, Grid3X3, Camera, FileUp, Droplets, Zap, Shield } from 'lucide-react'
 import { api } from '../services/api'
 
 interface Tenant {
@@ -18,6 +18,11 @@ interface Tenant {
   nationalId: string
   nationality: string
   isActive: boolean
+  deposit?: number
+  waterMeter?: string
+  electricityMeter?: string
+  idImage?: string
+  contractDocument?: string
 }
 
 interface HouseOption {
@@ -41,6 +46,12 @@ function Tenants({ language }: TenantsProps) {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [formData, setFormData] = useState<Partial<Tenant>>({})
   const [houses, setHouses] = useState<HouseOption[]>([])
+  const [idImageFile, setIdImageFile] = useState<File | null>(null)
+  const [contractFile, setContractFile] = useState<File | null>(null)
+  const [idImagePreview, setIdImagePreview] = useState('')
+  const [contractPreview, setContractPreview] = useState('')
+  const idImageRef = useRef<HTMLInputElement>(null)
+  const contractRef = useRef<HTMLInputElement>(null)
 
   const mapToFrontend = (item: any): Tenant => ({
     id: item.id || String(Date.now()),
@@ -56,7 +67,12 @@ function Tenants({ language }: TenantsProps) {
     paymentDueDay: item.paymentDueDay ?? 1,
     nationalId: item.nationalId || '',
     nationality: item.nationality || '',
-    isActive: item.isActive !== false
+    isActive: item.isActive !== false,
+    deposit: item.deposit ?? 0,
+    waterMeter: item.waterMeter || '',
+    electricityMeter: item.electricityMeter || '',
+    idImage: item.idImage || '',
+    contractDocument: item.contractDocument || ''
   })
 
   const mapToBackend = (tenant: Partial<Tenant>): Record<string, any> => ({
@@ -74,7 +90,10 @@ function Tenants({ language }: TenantsProps) {
     paymentDueDay: tenant.paymentDueDay ?? 1,
     nationalId: tenant.nationalId || '',
     nationality: tenant.nationality || '',
-    isActive: tenant.isActive ?? true
+    isActive: tenant.isActive ?? true,
+    deposit: tenant.deposit ?? 0,
+    waterMeter: tenant.waterMeter || '',
+    electricityMeter: tenant.electricityMeter || ''
   })
 
   const fetchHouses = async () => {
@@ -122,8 +141,12 @@ function Tenants({ language }: TenantsProps) {
       fullName: '', email: '', password: '', phoneNumber: '',
       houseId: '', houseNumber: '', contractNumber: '', contractStartDate: '', contractEndDate: '',
       monthlyRent: 0, paymentDueDay: 1, nationalId: '', nationality: '',
-      isActive: true
+      isActive: true, deposit: 0, waterMeter: '', electricityMeter: ''
     })
+    setIdImageFile(null)
+    setContractFile(null)
+    setIdImagePreview('')
+    setContractPreview('')
     fetchHouses()
     setShowModal(true)
   }
@@ -131,6 +154,10 @@ function Tenants({ language }: TenantsProps) {
   const handleEdit = (tenant: Tenant) => {
     setEditingTenant(tenant)
     setFormData({ ...tenant, password: '' })
+    setIdImageFile(null)
+    setContractFile(null)
+    setIdImagePreview(tenant.idImage || '')
+    setContractPreview(tenant.contractDocument || '')
     fetchHouses()
     setShowModal(true)
   }
@@ -169,12 +196,14 @@ function Tenants({ language }: TenantsProps) {
 
   const handleSave = async () => {
     try {
+      const payload = mapToBackend({ ...editingTenant, ...formData })
+      if (idImageFile) payload.idImage = idImageFile
+      if (contractFile) payload.contractDocument = contractFile
+
       if (editingTenant) {
-        const payload = mapToBackend({ ...editingTenant, ...formData })
         await api.updateTenant(String(editingTenant.id), payload)
         setTenants(tenants.map(t => t.id === editingTenant.id ? { ...t, ...formData } as Tenant : t))
       } else {
-        const payload = mapToBackend(formData)
         const newTenantBackend = await api.createTenant(payload)
         const newTenant = mapToFrontend(newTenantBackend)
         if (formData.fullName) newTenant.fullName = formData.fullName
@@ -382,6 +411,45 @@ function Tenants({ language }: TenantsProps) {
                   <option value="false">{t('غير نشط', 'Inactive')}</option>
                 </select>
               </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('التأمين', 'Deposit')}</label>
+                  <input type="number" value={formData.deposit || ''} onChange={e => setFormData({ ...formData, deposit: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" placeholder={t('مبلغ التأمين', 'Deposit amount')} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('عداد الماء', 'Water Meter')}</label>
+                  <input type="text" value={formData.waterMeter || ''} onChange={e => setFormData({ ...formData, waterMeter: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" placeholder={t('رقم العداد', 'Meter number')} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('عداد الكهرباء', 'Electricity Meter')}</label>
+                  <input type="text" value={formData.electricityMeter || ''} onChange={e => setFormData({ ...formData, electricityMeter: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" placeholder={t('رقم العداد', 'Meter number')} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('صورة الهوية', 'ID Image')}</label>
+                  <input ref={idImageRef} type="file" accept="image/*" className="hidden" onChange={e => {
+                    const file = e.target.files?.[0]
+                    if (file) { setIdImageFile(file); setIdImagePreview(URL.createObjectURL(file)) }
+                  }} />
+                  <button type="button" onClick={() => idImageRef.current?.click()} className="w-full h-10 px-3 border border-dashed border-slate-300 rounded-xl text-sm text-slate-500 hover:border-primary-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
+                    <Camera className="w-4 h-4" />
+                    {idImagePreview ? t('تم التحديد', 'Selected') : t('اختر صورة', 'Choose image')}
+                  </button>
+                  {idImagePreview && <img src={idImagePreview} alt="" className="mt-2 h-16 rounded-lg object-cover" />}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('عقد المستأجر', 'Contract Document')}</label>
+                  <input ref={contractRef} type="file" accept=".pdf,.doc,.docx,image/*" className="hidden" onChange={e => {
+                    const file = e.target.files?.[0]
+                    if (file) { setContractFile(file); setContractPreview(file.name) }
+                  }} />
+                  <button type="button" onClick={() => contractRef.current?.click()} className="w-full h-10 px-3 border border-dashed border-slate-300 rounded-xl text-sm text-slate-500 hover:border-primary-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
+                    <FileUp className="w-4 h-4" />
+                    {contractPreview || t('اختر ملف', 'Choose file')}
+                  </button>
+                </div>
+              </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={handleSave} className="flex-1 h-10 bg-primary-600 text-white rounded-xl hover:bg-primary-700">
@@ -461,11 +529,37 @@ function Tenants({ language }: TenantsProps) {
                     <span className="text-sm text-slate-600">{t('يوم الدفع', 'Due Day')}: {viewingTenant.paymentDueDay}</span>
                   </div>
                 )}
+                {viewingTenant.deposit ? (
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">{t('التأمين', 'Deposit')}: {viewingTenant.deposit.toLocaleString()} {t('ج.م', 'EGP')}</span>
+                  </div>
+                ) : null}
+                {viewingTenant.waterMeter && (
+                  <div className="flex items-center gap-2">
+                    <Droplets className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">{t('عداد الماء', 'Water')}: {viewingTenant.waterMeter}</span>
+                  </div>
+                )}
+                {viewingTenant.electricityMeter && (
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-slate-400" />
+                    <span className="text-sm text-slate-600">{t('عداد الكهرباء', 'Electricity')}: {viewingTenant.electricityMeter}</span>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2 pt-2">
-                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${viewingTenant.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              <div className="flex flex-col gap-2 pt-2">
+                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold w-fit ${viewingTenant.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                   {viewingTenant.isActive ? t('نشط', 'Active') : t('غير نشط', 'Inactive')}
                 </span>
+                <div className="flex gap-3">
+                  {viewingTenant.idImage && (
+                    <a href={viewingTenant.idImage} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-600 hover:underline flex items-center gap-1"><Camera className="w-3 h-3" />{t('صورة الهوية', 'ID Image')}</a>
+                  )}
+                  {viewingTenant.contractDocument && (
+                    <a href={viewingTenant.contractDocument} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-600 hover:underline flex items-center gap-1"><FileUp className="w-3 h-3" />{t('العقد', 'Contract')}</a>
+                  )}
+                </div>
               </div>
             </div>
             <button onClick={() => setShowViewModal(false)} className="w-full h-10 mt-4 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200">

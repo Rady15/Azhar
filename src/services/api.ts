@@ -267,6 +267,11 @@ export interface TenantModel {
   nationality?: string;
   houseId?: string;
   isActive?: boolean;
+  deposit?: number;
+  waterMeter?: string;
+  electricityMeter?: string;
+  idImage?: string;
+  contractDocument?: string;
 }
 
 export interface MaintenanceModel {
@@ -384,7 +389,7 @@ export const api = {
   },
 
   async createTenant(tenant: Record<string, any>): Promise<TenantModel> {
-    return request<TenantModel>('POST', '/api/Tenants', tenant);
+    return formDataRequest<TenantModel>('POST', '/api/Tenants', tenant);
   },
 
   async getTenantById(id: string): Promise<TenantModel> {
@@ -392,7 +397,7 @@ export const api = {
   },
 
   async updateTenant(id: string, tenant: Record<string, any>): Promise<TenantModel> {
-    return request<TenantModel>('PUT', `/api/Tenants/${id}`, tenant);
+    return formDataRequest<TenantModel>('PUT', `/api/Tenants/${id}`, tenant);
   },
 
   async deleteTenant(id: string, tenantData: Record<string, any>): Promise<any> {
