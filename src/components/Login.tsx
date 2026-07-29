@@ -89,25 +89,32 @@ function Login({ onLogin }: LoginProps) {
           </button>
         </form>
 
-        <div className="mt-4">
+        <div className="mt-4 space-y-2">
           <button
             type="button"
             onClick={() => {
               setUsername('admin@azhar.com')
               setPassword('Admin@123')
-              setTimeout(() => {
-                const form = document.querySelector('form')
-                form?.requestSubmit()
-              }, 50)
+              setTimeout(() => { document.querySelector('form')?.requestSubmit() }, 50)
             }}
             className="w-full h-10 border-2 border-dashed border-white/30 text-white/80 hover:bg-white/10 rounded-xl font-medium text-sm transition-colors"
           >
-            ⚡ Quick Login (admin)
+            ⚡ Quick Login — Admin
           </button>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => { setUsername('ahmed@azhar.com'); setPassword('Staff@123'); setTimeout(() => document.querySelector('form')?.requestSubmit(), 50) }} className="flex-1 h-9 border border-white/20 text-white/70 hover:bg-white/10 rounded-xl text-xs transition-colors truncate">Ahmed Ali</button>
+            <button type="button" onClick={() => { setUsername('laila@azhar.com'); setPassword('Staff@123'); setTimeout(() => document.querySelector('form')?.requestSubmit(), 50) }} className="flex-1 h-9 border border-white/20 text-white/70 hover:bg-white/10 rounded-xl text-xs transition-colors truncate">Laila</button>
+            <button type="button" onClick={() => { setUsername('faisal@azhar.com'); setPassword('Staff@123'); setTimeout(() => document.querySelector('form')?.requestSubmit(), 50) }} className="flex-1 h-9 border border-white/20 text-white/70 hover:bg-white/10 rounded-xl text-xs transition-colors truncate">Faisal</button>
+          </div>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => { setUsername('mohamed@azhar.com'); setPassword('Staff@123'); setTimeout(() => document.querySelector('form')?.requestSubmit(), 50) }} className="flex-1 h-9 border border-white/20 text-white/70 hover:bg-white/10 rounded-xl text-xs transition-colors truncate">Mohamed</button>
+            <button type="button" onClick={() => { setUsername('sara@azhar.com'); setPassword('Staff@123'); setTimeout(() => document.querySelector('form')?.requestSubmit(), 50) }} className="flex-1 h-9 border border-white/20 text-white/70 hover:bg-white/10 rounded-xl text-xs transition-colors truncate">Sara</button>
+            <button type="button" onClick={() => { setUsername('nora@azhar.com'); setPassword('Staff@123'); setTimeout(() => document.querySelector('form')?.requestSubmit(), 50) }} className="flex-1 h-9 border border-white/20 text-white/70 hover:bg-white/10 rounded-xl text-xs transition-colors truncate">Nora</button>
+          </div>
         </div>
 
         <p className="text-center text-white/50 text-xs mt-4">
-          default: admin@azhar.com / Admin@123
+          admin: admin@azhar.com / Admin@123 &nbsp;|&nbsp; staff: *@azhar.com / Staff@123
         </p>
       </div>
     </div>
