@@ -13,11 +13,12 @@ import Reports from './components/Reports'
 import Bookings from './components/Bookings'
 import Facilities from './components/Facilities'
 import Staff from './components/Staff'
+import StaffTasks from './components/StaffTasks'
 import { api } from './services/api'
 
-type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'staff'
+type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'staff' | 'my-tasks'
 
-const ALL_TABS: TabType[] = ['dashboard', 'tenants', 'villas', 'maintenance', 'complaints', 'payments', 'ads', 'reports', 'facilities', 'bookings', 'staff']
+const ALL_TABS: TabType[] = ['dashboard', 'tenants', 'villas', 'maintenance', 'complaints', 'payments', 'ads', 'reports', 'facilities', 'bookings', 'staff', 'my-tasks']
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -93,7 +94,11 @@ function App() {
     setUserName(localStorage.getItem('azhar_name') || localStorage.getItem('azhar_email') || _username || 'Admin')
     const stored = localStorage.getItem('azhar_permissions')
     if (stored) {
-      try { setUserPermissions(JSON.parse(stored)) } catch { setUserPermissions(ALL_TABS) }
+      try {
+        const perms: string[] = JSON.parse(stored)
+        setUserPermissions(perms)
+        if (perms.length === 1 && perms[0] === 'my-tasks') setActiveTab('my-tasks')
+      } catch { setUserPermissions(ALL_TABS) }
     }
   }
 
@@ -133,6 +138,8 @@ function App() {
         return hasAccess('bookings') ? <Bookings language={language} /> : noAccess
       case 'staff':
         return hasAccess('staff') ? <Staff language={language} /> : noAccess
+      case 'my-tasks':
+        return <StaffTasks language={language} />
       default:
         return null
     }

@@ -23,6 +23,10 @@ function Login({ onLogin }: LoginProps) {
       if (result.fullName) {
         localStorage.setItem('azhar_name', result.fullName)
       }
+      const isAdmin = username === 'admin@azhar.com'
+      const staffPerms = ['my-tasks']
+      const allTabs = ['dashboard', 'tenants', 'villas', 'maintenance', 'complaints', 'payments', 'ads', 'reports', 'facilities', 'bookings', 'staff', 'my-tasks']
+      localStorage.setItem('azhar_permissions', JSON.stringify(isAdmin ? allTabs : staffPerms))
       onLogin(username)
     } catch (err: any) {
       console.error('Login error:', err)
