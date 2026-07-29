@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, Home, Loader2, Calendar, DollarSign, Wrench, Star, Upload, Flag, UserCircle, LayoutList, Grid3X3, User } from 'lucide-react'
+import { Plus, Edit, Eye, X, Home, Loader2, Calendar, DollarSign, Wrench, Star, Upload, Flag, UserCircle, LayoutList, Grid3X3, User } from 'lucide-react'
 import { api, MaintenanceModel, StaffModel, API_BASE_URL } from '../services/api'
 import CurrencySymbol from './CurrencySymbol'
 
@@ -13,16 +13,16 @@ interface MaintenanceProps {
 
 const STATUS_LABELS: Record<string, { ar: string, en: string }> = {
   'Submitted': { ar: 'مقدم', en: 'Submitted' },
-  'Pending': { ar: 'قيد الانتظار', en: 'Pending' },
-  'In Progress': { ar: 'قيد العمل', en: 'In Progress' },
+  'Assigned': { ar: 'تم التعيين', en: 'Assigned' },
+  'InProgress': { ar: 'قيد العمل', en: 'In Progress' },
   'Completed': { ar: 'مكتمل', en: 'Completed' },
   'Cancelled': { ar: 'ملغى', en: 'Cancelled' }
 }
 
 const STATUS_STYLES: Record<string, string> = {
   'Submitted': 'bg-purple-100 text-purple-700',
-  'Pending': 'bg-amber-100 text-amber-700',
-  'In Progress': 'bg-blue-100 text-blue-700',
+  'Assigned': 'bg-amber-100 text-amber-700',
+  'InProgress': 'bg-blue-100 text-blue-700',
   'Completed': 'bg-green-100 text-green-700',
   'Cancelled': 'bg-slate-100 text-slate-700'
 }
@@ -135,18 +135,6 @@ function Maintenance({ language }: MaintenanceProps) {
     setShowViewModal(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm(language === 'AR' ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete?')) {
-      try {
-        await api.deleteMaintenance(id)
-        setRequests(requests.filter(r => r.id !== id))
-      } catch (err: any) {
-        console.error('Delete maintenance error:', err)
-        alert(language === 'AR' ? `فشل الحذف: ${err.message}` : `Delete failed: ${err.message}`)
-      }
-    }
-  }
-
   const handleSave = async () => {
     setSaving(true)
     try {
@@ -166,7 +154,7 @@ function Maintenance({ language }: MaintenanceProps) {
       }
 
       if (editingRequest) {
-        const maintenanceStatusMap: Record<string, number> = { Submitted: 0, InProgress: 1, Completed: 2, Rejected: 3 }
+        const maintenanceStatusMap: Record<string, number> = { Submitted: 0, Assigned: 1, InProgress: 2, Completed: 3, Cancelled: 4 }
         await api.updateMaintenanceStatus(String(editingRequest.id), {
           Status: maintenanceStatusMap[formData.status || 'Submitted'] ?? 0,
           AdminNotes: formData.adminNotes || ''
@@ -257,7 +245,7 @@ function Maintenance({ language }: MaintenanceProps) {
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الرقم', 'No.')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('العنوان', 'Title')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('التصنيف', 'Category')}</th>
-                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('المنزل', 'House')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الفيلا', 'Villa')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الأولوية', 'Priority')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الحالة', 'Status')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('مسؤول', 'Assigned')}</th>
@@ -288,7 +276,6 @@ function Maintenance({ language }: MaintenanceProps) {
                     <div className="flex items-center gap-2">
                       <button onClick={() => handleView(request)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title={t('عرض', 'View')}><Eye className="w-4 h-4" /></button>
                       <button onClick={() => handleEdit(request)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg" title={t('تعديل', 'Edit')}><Edit className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(request.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title={t('حذف', 'Delete')}><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -310,7 +297,7 @@ function Maintenance({ language }: MaintenanceProps) {
               <h3 className="font-semibold text-slate-800 mb-2">{request.title || request.category || '—'}</h3>
               <div className="space-y-2 text-sm text-slate-600 mb-3">
                 <div className="flex justify-between"><span className="text-slate-400">{t('التصنيف', 'Category')}</span><span>{request.category || '—'}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">{t('المنزل', 'House')}</span><span>{request.houseNumber || request.villaNumber || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">{t('الفيلا', 'Villa')}</span><span>{request.houseNumber || request.villaNumber || '—'}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">{t('التكلفة', 'Cost')}</span><span className="font-medium">{request.cost ? <>{request.cost} <CurrencySymbol /></> : '—'}</span></div>
                 {request.assignedToName && <div className="flex justify-between"><span className="text-slate-400">{t('مسؤول', 'Assigned')}</span><span>{request.assignedToName}</span></div>}
                 {request.rating ? (
@@ -320,7 +307,6 @@ function Maintenance({ language }: MaintenanceProps) {
               <div className="flex items-center justify-end gap-1 pt-3 border-t border-slate-100">
                 <button onClick={() => handleView(request)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-3.5 h-3.5" /></button>
                 <button onClick={() => handleEdit(request)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"><Edit className="w-3.5 h-3.5" /></button>
-                <button onClick={() => handleDelete(request.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </div>
           ))}
@@ -348,14 +334,11 @@ function Maintenance({ language }: MaintenanceProps) {
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('التصنيف', 'Category')}</label>
                   <select value={formData.category || ''} onChange={e => setFormData({ ...formData, category: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
                     <option value="">-- {t('اختر', 'Select')} --</option>
-                    <option value="كهرباء">{t('كهرباء', 'Electrical')}</option>
-                    <option value="سباكة">{t('سباكة', 'Plumbing')}</option>
-                    <option value="تكييف">{t('تكييف', 'AC')}</option>
-                    <option value="نجارة">{t('نجارة', 'Carpentry')}</option>
-                    <option value="دهان">{t('دهان', 'Painting')}</option>
-                    <option value="أرضيات">{t('أرضيات', 'Flooring')}</option>
-                    <option value="حدادة">{t('حدادة', 'Metalwork')}</option>
-                    <option value="أخرى">{t('أخرى', 'Other')}</option>
+                    <option value="Electrical">{t('كهرباء', 'Electrical')}</option>
+                    <option value="Plumbing">{t('سباكة', 'Plumbing')}</option>
+                    <option value="AC">{t('تكييف', 'AC')}</option>
+                    <option value="Carpentry">{t('نجارة', 'Carpentry')}</option>
+                    <option value="Other">{t('أخرى', 'Other')}</option>
                   </select>
                 </div>
               </div>
@@ -365,7 +348,7 @@ function Maintenance({ language }: MaintenanceProps) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('رقم المنزل', 'House Number')}</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('رقم الفيلا', 'Villa Number')}</label>
                   <input type="text" value={formData.houseNumber || ''} onChange={e => setFormData({ ...formData, houseNumber: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
                 <div>
@@ -480,7 +463,7 @@ function Maintenance({ language }: MaintenanceProps) {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <Home className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">{t('منزل', 'House')}: {viewingRequest.houseNumber || viewingRequest.villaNumber || '—'}</span>
+                  <span className="text-slate-600">{t('فيلا', 'Villa')}: {viewingRequest.houseNumber || viewingRequest.villaNumber || '—'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-slate-400" />

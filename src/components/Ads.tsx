@@ -39,19 +39,41 @@ function Ads({ language }: AdsProps) {
   const [viewingLetter, setViewingLetter] = useState<Letter | null>(null)
   const [formData, setFormData] = useState<Partial<Letter>>({})
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     localStorage.setItem('azhar_letters', JSON.stringify(letters))
   }, [letters])
 
   useEffect(() => {
+    api.getLetters().then((data: any) => {
+      if (Array.isArray(data) && data.length > 0) {
+        const serverLetters: Letter[] = data.map((l: any) => ({
+          id: l.id || `LET-${Date.now()}`,
+          title: l.title || '',
+          content: l.content || '',
+          recipientType: l.recipientType === 1 ? 'specific' : 'all',
+          recipientId: l.recipientId || '',
+          recipientName: l.recipientName || '',
+          sentDate: l.sentDate ? l.sentDate.split('T')[0] : new Date().toISOString().split('T')[0],
+          status: 'sent' as const,
+        }))
+        setLetters(prev => {
+          const existingIds = new Set(prev.map(p => p.id))
+          const existingKeys = new Set(prev.map(p => `${p.title}|${p.content}|${p.recipientName}`))
+          const newOnes = serverLetters.filter(s => !existingIds.has(s.id) && !existingKeys.has(`${s.title}|${s.content}|${s.recipientName}`))
+          return [...newOnes, ...prev]
+        })
+      }
+    }).catch(() => {})
+  }, [])
+
+  useEffect(() => {
     setLoadingTenants(true)
     api.getTenants()
       .then((data: any) => {
-        const list: Tenant[] = Array.isArray(data)
-          ? data.map((t: any) => ({ id: String(t.id || t.tenantId || ''), fullName: t.fullName || t.name || '', email: t.email || '', houseNumber: t.houseNumber || t.villaNumber || '', phoneNumber: t.phoneNumber || '' }))
-          : []
-        setTenants(list)
+        const raw = Array.isArray(data) ? data : Array.isArray(data?.tenants) ? data.tenants : Array.isArray(data?.data) ? data.data : []
+        setTenants(raw.map((t: any) => ({ id: String(t.id || t.tenantId || ''), fullName: t.fullName || t.name || '', email: t.email || '', houseNumber: t.houseNumber || t.villaNumber || '', phoneNumber: t.phoneNumber || '' })))
       })
       .catch(() => {})
       .finally(() => setLoadingTenants(false))
@@ -75,11 +97,29 @@ function Ads({ language }: AdsProps) {
     }
   }
 
-  const handleSend = (id: string) => {
-    setLetters(letters.map(l => l.id === id ? { ...l, status: 'sent' as const, sentDate: new Date().toISOString().split('T')[0] } : l))
+  const handleSend = async (id: string) => {
+    if (saving) return
+    const letter = letters.find(l => l.id === id)
+    if (!letter) return
+    setSaving(true)
+    try {
+      const recipientType = letter.recipientType === 'all' ? 0 : 1
+      await api.sendLetter({
+        title: letter.title,
+        content: letter.content,
+        recipientType,
+        recipientId: letter.recipientType === 'specific' ? letter.recipientId : undefined,
+      })
+      setLetters(letters.map(l => l.id === id ? { ...l, status: 'sent' as const, sentDate: new Date().toISOString().split('T')[0] } : l))
+    } catch (err: any) {
+      console.error('Send letter error:', err)
+      alert(t('فشل إرسال الخطاب', 'Failed to send letter'))
+    }
+    setSaving(false)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (saving) return
     if (!formData.title || !formData.content) {
       alert(t('يرجى إدخال عنوان الخطاب والمحتوى', 'Please enter letter title and content'))
       return
@@ -93,14 +133,34 @@ function Ads({ language }: AdsProps) {
       ? t('جميع المستأجرين', 'All Tenants')
       : tenants.find(tt => tt.id === formData.recipientId)?.fullName || formData.recipientName || ''
 
+    setSaving(true)
+    try {
+      const recipientType = formData.recipientType === 'all' ? 0 : 1
+      await api.sendLetter({
+        title: formData.title || '',
+        content: formData.content || '',
+        recipientType,
+        recipientId: formData.recipientType === 'specific' ? formData.recipientId : undefined,
+      })
+    } catch (err: any) {
+      console.error('Send letter error:', err)
+      alert(t('فشل إرسال الخطاب', 'Failed to send letter'))
+      setSaving(false)
+      return
+    }
+
     setLetters([{
-      ...formData as Letter,
       id: getNextId(),
+      title: formData.title || '',
+      content: formData.content || '',
+      recipientType: formData.recipientType === 'specific' ? 'specific' : 'all',
+      recipientId: formData.recipientId || '',
       recipientName,
-      status: 'sent',
       sentDate: new Date().toISOString().split('T')[0],
+      status: 'sent',
     }, ...letters])
     setShowModal(false)
+    setSaving(false)
   }
 
   const draftCount = letters.filter(l => l.status === 'draft').length
@@ -303,8 +363,8 @@ function Ads({ language }: AdsProps) {
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={handleSave} className="flex-1 h-10 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 flex items-center justify-center gap-2">
-                <Send className="w-4 h-4" />{t('إرسال', 'Send')}
+              <button onClick={handleSave} disabled={saving} className={`flex-1 h-10 flex items-center justify-center gap-2 rounded-xl transition-colors ${saving ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}>
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}{saving ? t('جارٍ الإرسال...', 'Sending...') : t('إرسال', 'Send')}
               </button>
               <button onClick={() => setShowModal(false)} className="flex-1 h-10 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200">{t('إلغاء', 'Cancel')}</button>
             </div>

@@ -348,6 +348,9 @@ export interface HouseModel {
   bathroomsCount?: number;
   hasGarage?: boolean;
   hasGarden?: boolean;
+  hasCentralAirConditioning?: boolean;
+  isFurnished?: boolean;
+  hasInstalledKitchen?: boolean;
   notes?: string;
   images?: string[];
   imageUrls?: string[];
@@ -397,7 +400,7 @@ export const api = {
   },
 
   async updateTenant(id: string, tenant: Record<string, any>): Promise<TenantModel> {
-    return formDataRequest<TenantModel>('PUT', `/api/Tenants/${id}`, tenant);
+    return request<TenantModel>('PUT', `/api/Tenants/${id}`, tenant);
   },
 
   async deleteTenant(id: string, tenantData: Record<string, any>): Promise<any> {
@@ -414,7 +417,7 @@ export const api = {
   },
 
   async createMaintenance(data: Record<string, any>): Promise<MaintenanceModel> {
-    return request<MaintenanceModel>('POST', '/api/Maintenance', data);
+    return formDataRequest<MaintenanceModel>('POST', '/api/Maintenance', data);
   },
 
   async updateMaintenanceStatus(id: string, statusData: Record<string, any>): Promise<any> {
@@ -426,7 +429,7 @@ export const api = {
   },
 
   async assignMaintenance(id: string, assignData: { assignedToId: string }): Promise<any> {
-    return request<any>('PUT', `/api/Maintenance/${id}/assign`, { TechnicianId: assignData.assignedToId });
+    return request<any>('PUT', `/api/Maintenance/${id}/assign`, { technicianId: assignData.assignedToId });
   },
 
   async deleteMaintenance(id: string): Promise<any> {
@@ -446,8 +449,8 @@ export const api = {
     return request<any>('PUT', `/api/Facilities/bookings/${id}/status`, status);
   },
 
-  async createFacility(facility: FacilityModel): Promise<FacilityModel> {
-    return formDataRequest<FacilityModel>('POST', '/api/Facilities', facility as unknown as Record<string, any>);
+  async createFacility(facility: Record<string, any>): Promise<FacilityModel> {
+    return formDataRequest<FacilityModel>('POST', '/api/Facilities', facility);
   },
 
   async updateFacility(id: string, data: Record<string, any>): Promise<FacilityModel> {
@@ -455,7 +458,7 @@ export const api = {
   },
 
   async deleteFacility(id: string, emailData: { email: string }): Promise<any> {
-    return formDataRequest<any>('DELETE', `/api/Facilities/${id}`, emailData);
+    return request<any>('DELETE', `/api/Facilities/${id}`, emailData);
   },
 
   async getMyBookings(): Promise<BookingModel[]> {
@@ -484,15 +487,8 @@ export const api = {
     return formDataRequest<AnnouncementModel>('POST', '/api/Announcements', announcement);
   },
 
-  async updateAnnouncement(id: string, announcement: Record<string, any>): Promise<AnnouncementModel> {
-    return formDataRequest<AnnouncementModel>('PATCH', `/api/Announcements/${id}`, announcement);
-  },
-
-  async deleteAnnouncement(id: string, data?: Record<string, any>): Promise<any> {
-    if (data) {
-      return formDataRequest<any>('DELETE', `/api/Announcements/${id}`, data);
-    }
-    return request<any>('DELETE', `/api/Announcements/${id}`);
+  async deleteAnnouncement(id: string, data: Record<string, any>): Promise<any> {
+    return request<any>('DELETE', `/api/Announcements/${id}`, data);
   },
 
   // Complaints API
@@ -529,8 +525,12 @@ export const api = {
     return formDataRequest<any>('PUT', `/api/house/${id}`, villa);
   },
 
-  async deleteVilla(id: string, villa: HouseModel): Promise<any> {
-    return formDataRequest<any>('DELETE', `/api/house/${id}`, villa as unknown as Record<string, any>);
+  async deleteVilla(id: string): Promise<any> {
+    return request<any>('DELETE', `/api/house/${id}`);
+  },
+
+  async getAvailableHouses(): Promise<HouseModel[]> {
+    return request<HouseModel[]>('GET', '/api/house/available');
   },
 
   // Payments API
@@ -548,19 +548,49 @@ export const api = {
 
   // Staff API
   async getStaff(): Promise<StaffModel[]> {
-    return request<StaffModel[]>('GET', '/api/Staff');
+    return request<StaffModel[]>('GET', '/api/staff');
   },
 
   async createStaff(staff: Record<string, any>): Promise<StaffModel> {
-    return request<StaffModel>('POST', '/api/Staff', staff);
+    return formDataRequest<StaffModel>('POST', '/api/staff', staff);
   },
 
   async updateStaff(id: string, staff: Record<string, any>): Promise<StaffModel> {
-    return request<StaffModel>('PUT', `/api/Staff/${id}`, staff);
+    return formDataRequest<StaffModel>('PUT', `/api/staff/${id}`, staff);
   },
 
   async deleteStaff(id: string): Promise<any> {
-    return request<any>('DELETE', `/api/Staff/${id}`);
+    return request<any>('DELETE', `/api/staff/${id}`);
+  },
+
+  async toggleActiveStaff(id: string): Promise<any> {
+    return request<any>('PUT', `/api/staff/${id}/toggle-active`);
+  },
+
+  async getStaffMyTasks(): Promise<any[]> {
+    return request<any[]>('GET', '/api/staff/my-tasks');
+  },
+
+  // Profile API
+  async getProfile(): Promise<any> {
+    return request<any>('GET', '/api/profile');
+  },
+
+  async updateProfile(data: { displayName?: string; phoneNumber?: string }): Promise<any> {
+    return request<any>('PUT', '/api/profile', data);
+  },
+
+  async changePassword(data: { currentPassword: string; newPassword: string; confirmNewPassword: string }): Promise<any> {
+    return request<any>('PUT', '/api/profile/change-password', data);
+  },
+
+  // Letters API
+  async sendLetter(letter: { title: string; content: string; recipientType: number; recipientId?: string }): Promise<any> {
+    return request<any>('POST', '/api/letters', letter);
+  },
+
+  async getLetters(): Promise<any[]> {
+    return request<any[]>('GET', '/api/letters');
   },
 
   // Reports API

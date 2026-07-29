@@ -72,8 +72,8 @@ function StatsCards({ language }: StatsCardsProps) {
         if (maintenance.status === 'fulfilled') {
           const list = getList<MaintenanceModel>(maintenance.value as any)
           data.activeMaintenance = data.activeMaintenance || list.filter(x => {
-            const s = (x.status ?? '').toLowerCase().replace(' ', '_')
-            return s === 'pending' || s === 'in_progress'
+            const s = (x.status ?? '').toLowerCase()
+            return s === 'assigned' || s === 'inprogress'
           }).length
         }
 
@@ -119,7 +119,7 @@ function StatsCards({ language }: StatsCardsProps) {
     {
       title: t('إجمالي السكان', 'Total Residents'),
       value: loading ? '...' : String(statsData.totalTenants),
-      subtext: language === 'AR' ? `${statsData.totalHouses} منزل` : `${statsData.totalHouses} Houses`,
+      subtext: language === 'AR' ? `${statsData.totalHouses} فيلا` : `${statsData.totalHouses} Villas`,
       icon: Users,
       bgColor: 'bg-emerald-50',
       iconColor: 'text-emerald-600',

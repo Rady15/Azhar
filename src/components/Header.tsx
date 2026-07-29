@@ -21,6 +21,8 @@ interface HeaderProps {
   setActiveTab: (tab: any) => void
   userName?: string
   permissions?: string[]
+  hasNewNotification?: boolean
+  onMarkRead?: () => void
 }
 
 interface SearchResult {
@@ -30,7 +32,7 @@ interface SearchResult {
   category: string
 }
 
-function Header({ language, setLanguage, notifications, showNotifications, setShowNotifications, onLogout, searchQuery, setSearchQuery, setActiveTab, userName, permissions }: HeaderProps) {
+function Header({ language, setLanguage, notifications, showNotifications, setShowNotifications, onLogout, searchQuery, setSearchQuery, setActiveTab, userName, permissions, hasNewNotification, onMarkRead }: HeaderProps) {
   const unreadCount = notifications.filter(n => n.unread).length
   const [showSuggestions, setShowSuggestions] = useState(false)
 
@@ -125,23 +127,30 @@ function Header({ language, setLanguage, notifications, showNotifications, setSh
 
         <div className="relative">
           <button 
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors"
+            onClick={() => { setShowNotifications(!showNotifications); if (!showNotifications && onMarkRead) onMarkRead() }}
+            className="relative p-2 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors group"
           >
-            <Bell className="w-5 h-5" />
+            <Bell className={`w-5 h-5 ${hasNewNotification ? 'animate-bell' : ''}`} />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 left-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center px-1 bg-red-500 text-white text-[10px] font-bold rounded-full shadow-sm animate-pop-in">
+                {unreadCount}
+              </span>
             )}
           </button>
 
           {showNotifications && (
-            <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-              <div className="p-3 border-b border-slate-100">
+            <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
+              <div className="p-3 border-b border-slate-100 flex items-center justify-between">
                 <h3 className="font-semibold text-slate-800">{language === 'AR' ? 'الإشعارات' : 'Notifications'}</h3>
+                {unreadCount > 0 && (
+                  <span className="text-[10px] text-slate-400">{unreadCount} {language === 'AR' ? 'جديد' : 'new'}</span>
+                )}
               </div>
               <div className="max-h-64 overflow-y-auto">
-                {notifications.map((notif) => (
-                  <div key={notif.id} className={`p-3 border-b border-slate-50 hover:bg-slate-50 ${notif.unread ? 'bg-primary-50' : ''}`}>
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center text-slate-400 text-sm">{language === 'AR' ? 'لا توجد إشعارات' : 'No notifications'}</div>
+                ) : notifications.map((notif) => (
+                  <div key={notif.id} className={`p-3 border-b border-slate-50 hover:bg-slate-50 transition-colors ${notif.unread ? 'bg-primary-50 border-r-2 border-r-primary-500' : ''}`}>
                     <p className="text-sm font-medium text-slate-700">{notif.title}</p>
                     <p className="text-xs text-slate-500 mt-1">{notif.message}</p>
                     <p className="text-xs text-slate-400 mt-1">{notif.time}</p>

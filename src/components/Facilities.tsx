@@ -138,11 +138,9 @@ export default function Facilities({ language }: FacilitiesProps) {
         maxCapacity: Number(formData.maxCapacity) || 10,
         isAvailable: formData.isAvailable ?? true
       }
-      if (imageFile) {
-        payload.image = imageFile
-      }
 
       if (editingFacility && editingFacility.id) {
+        if (imageFile) payload.image = imageFile
         const updated = await api.updateFacility(editingFacility.id, payload)
         setFacilities(prev => prev.map(f => f.id === editingFacility.id ? { ...f, ...updated, image: updated.image || imagePreview || f.image, isBooked: f.isBooked } : f))
       } else {

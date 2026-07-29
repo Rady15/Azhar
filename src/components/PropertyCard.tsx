@@ -58,21 +58,21 @@ function PropertyCard({ language }: PropertyCardProps) {
     <div className="bg-white rounded-2xl overflow-hidden card-shadow border border-slate-100">
       <div className="relative h-48 bg-slate-200">
         {imageUrl ? (
-          <img src={resolveImage(imageUrl)} alt={t(`منزل ${property.houseNumber}`, `House ${property.houseNumber}`)} className="w-full h-full object-cover" />
+          <img src={resolveImage(imageUrl)} alt={t(`فيلا ${property.houseNumber}`, `Villa ${property.houseNumber}`)} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <Building className="w-16 h-16 text-slate-300" />
           </div>
         )}
         <div className="absolute top-4 right-4 px-3 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg text-xs font-semibold text-primary-700">
-          {property.buildingNumber ? t(`مبنى ${property.buildingNumber}`, `Building ${property.buildingNumber}`) : t('منزل', 'House')}
+          {property.buildingNumber ? t(`مبنى ${property.buildingNumber}`, `Building ${property.buildingNumber}`) : t('فيلا', 'Villa')}
         </div>
       </div>
 
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h3 className="text-lg font-bold text-slate-800">{t(`منزل رقم ${property.houseNumber}`, `House No. ${property.houseNumber}`)}</h3>
+            <h3 className="text-lg font-bold text-slate-800">{t(`فيلا رقم ${property.houseNumber}`, `Villa No. ${property.houseNumber}`)}</h3>
             <div className="flex items-center gap-1 mt-1 text-slate-400">
               <MapPin className="w-3.5 h-3.5" />
               <span className="text-xs">{property.contractNumber ? t(`عقد ${property.contractNumber}`, `Contract ${property.contractNumber}`) : ''}</span>

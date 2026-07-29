@@ -25,6 +25,7 @@ interface Tenant {
   electricityMeter?: string
   idImage?: string
   contractDocument?: string
+  status?: string
 }
 
 interface HouseOption {
@@ -35,6 +36,8 @@ interface HouseOption {
 interface TenantsProps {
   language: 'AR' | 'EN'
 }
+
+const isImageUrl = (url: string) => /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(url)
 
 function Tenants({ language }: TenantsProps) {
   const [tenants, setTenants] = useState<Tenant[]>([])
@@ -74,8 +77,9 @@ function Tenants({ language }: TenantsProps) {
     isActive: item.isActive !== false,
     waterCost: item.waterCost ?? 0,
     electricityMeter: item.electricityMeter || '',
-    idImage: item.idImage || '',
-    contractDocument: item.contractDocument || ''
+    idImage: item.idImage || item.idImageUrl || '',
+    contractDocument: item.contractDocument || item.contractDocumentUrl || '',
+    status: item.status || ''
   })
 
   const mapToBackend = (tenant: Partial<Tenant>): Record<string, any> => ({
@@ -100,9 +104,9 @@ function Tenants({ language }: TenantsProps) {
     electricityMeter: tenant.electricityMeter || ''
   })
 
-  const fetchHouses = async () => {
+  const fetchHouses = async (includeHouseId?: string) => {
     try {
-      const data = await api.getVillas()
+      const data = await api.getAvailableHouses()
       let list: any[] = []
       if (Array.isArray(data)) {
         list = data
@@ -110,6 +114,19 @@ function Tenants({ language }: TenantsProps) {
         list = (data as any).houses
       }
       setHouses(list.map((h: any) => ({ id: h.id || h.houseNumber, houseNumber: h.houseNumber })))
+      if (includeHouseId && !list.some((h: any) => h.id === includeHouseId)) {
+        const allData = await api.getVillas()
+        let allList: any[] = []
+        if (Array.isArray(allData)) {
+          allList = allData
+        } else if (allData && Array.isArray((allData as any).houses)) {
+          allList = (allData as any).houses
+        }
+        const current = allList.find((h: any) => h.id === includeHouseId)
+        if (current) {
+          setHouses(prev => [...prev, { id: current.id, houseNumber: current.houseNumber }])
+        }
+      }
     } catch {
       setHouses([])
     }
@@ -162,7 +179,7 @@ function Tenants({ language }: TenantsProps) {
     setContractFile(null)
     setIdImagePreview(tenant.idImage || '')
     setContractPreview(tenant.contractDocument || '')
-    fetchHouses()
+    fetchHouses(tenant.houseId)
     setShowModal(true)
   }
 
@@ -200,14 +217,22 @@ function Tenants({ language }: TenantsProps) {
 
   const handleSave = async () => {
     try {
-      const payload = mapToBackend({ ...editingTenant, ...formData })
-      if (idImageFile) payload.idImage = idImageFile
-      if (contractFile) payload.contractDocument = contractFile
-
       if (editingTenant) {
-        await api.updateTenant(String(editingTenant.id), payload)
+        const merged = { ...editingTenant as Tenant, ...formData }
+        const updatePayload = {
+          fullName: (merged.fullName || '').replace(/\s+/g, ''),
+          phoneNumber: merged.phoneNumber || '',
+          houseNumber: merged.houseNumber || '',
+          contractNumber: merged.contractNumber || '',
+          contractEndDate: merged.contractEndDate ? new Date(merged.contractEndDate).toISOString() : new Date().toISOString(),
+          isActive: merged.isActive ?? true,
+        }
+        await api.updateTenant(String(editingTenant.id), updatePayload)
         setTenants(tenants.map(t => t.id === editingTenant.id ? { ...t, ...formData } as Tenant : t))
       } else {
+        const payload = mapToBackend({ ...formData } as Partial<Tenant>)
+        if (idImageFile) payload.idImage = idImageFile
+        if (contractFile) payload.contractDocument = contractFile
         const newTenantBackend = await api.createTenant(payload)
         const newTenant = mapToFrontend(newTenantBackend)
         if (formData.fullName) newTenant.fullName = formData.fullName
@@ -256,7 +281,7 @@ function Tenants({ language }: TenantsProps) {
               <tr className="border-b border-slate-200">
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الاسم', 'Name')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الهاتف', 'Phone')}</th>
-                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('المنزل', 'House')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الفيلا', 'Villa')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الجنسية', 'Nationality')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('العقد', 'Contract')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الإيجار', 'Rent')}</th>
@@ -307,7 +332,7 @@ function Tenants({ language }: TenantsProps) {
                 </div>
               </div>
                 <div className="space-y-2 text-sm text-slate-600 mb-3">
-                  <div className="flex justify-between"><span className="text-slate-400">{t('المنزل', 'House')}</span><span>{tenant.houseNumber}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">{t('الفيلا', 'Villa')}</span><span>{tenant.houseNumber}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">{t('الجنسية', 'Nationality')}</span><span>{tenant.nationality || '—'}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">{t('العقد', 'Contract')}</span><span>{tenant.contractNumber}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">{t('الإيجار السنوي', 'Annual Rent')}</span><span className="font-medium">{tenant.annualRent ? <>{tenant.annualRent.toLocaleString()} <CurrencySymbol /></> : (tenant.monthlyRent ? <>{tenant.monthlyRent.toLocaleString()} <CurrencySymbol /></> : '—')}</span></div>
@@ -370,7 +395,7 @@ function Tenants({ language }: TenantsProps) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('المنزل', 'House')} *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('الفيلا', 'Villa')} *</label>
                   <select
                     value={formData.houseId || ''}
                     onChange={e => {
@@ -379,7 +404,7 @@ function Tenants({ language }: TenantsProps) {
                     }}
                     className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm"
                   >
-                    <option value="">-- {t('اختر منزل', 'Select House')} --</option>
+                    <option value="">-- {t('اختر فيلا', 'Select Villa')} --</option>
                     {houses.map(h => (
                       <option key={h.id} value={h.id}>{h.houseNumber}</option>
                     ))}
@@ -415,12 +440,10 @@ function Tenants({ language }: TenantsProps) {
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('طريقة الدفع', 'Payment Method')}</label>
                   <select value={formData.paymentMethod || ''} onChange={e => setFormData({ ...formData, paymentMethod: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
                     <option value="">-- {t('اختر طريقة', 'Select Method')} --</option>
-                    <option value="سنوي">{t('سنوي', 'Annual')}</option>
-                    <option value="نصف سنوي">{t('نصف سنوي', 'Semi-Annual')}</option>
-                    <option value="ربع سنوي">{t('ربع سنوي', 'Quarterly')}</option>
-                    <option value="شهري">{t('شهري', 'Monthly')}</option>
-                    <option value="دفعة كاملة">{t('دفعة كاملة', 'Full Payment')}</option>
-                    <option value="مرنة">{t('مرنة', 'Flexible')}</option>
+                    <option value="Annual">{t('سنوي', 'Annual')}</option>
+                    <option value="SemiAnnual">{t('نصف سنوي', 'Semi-Annual')}</option>
+                    <option value="Quarterly">{t('ربع سنوي', 'Quarterly')}</option>
+                    <option value="Monthly">{t('شهري', 'Monthly')}</option>
                   </select>
                 </div>
                 <div>
@@ -452,11 +475,22 @@ function Tenants({ language }: TenantsProps) {
                     const file = e.target.files?.[0]
                     if (file) { setIdImageFile(file); setIdImagePreview(URL.createObjectURL(file)) }
                   }} />
-                  <button type="button" onClick={() => idImageRef.current?.click()} className="w-full h-10 px-3 border border-dashed border-slate-300 rounded-xl text-sm text-slate-500 hover:border-primary-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
-                    <Camera className="w-4 h-4" />
-                    {idImagePreview ? t('تم التحديد', 'Selected') : t('اختر صورة', 'Choose image')}
-                  </button>
-                  {idImagePreview && <img src={idImagePreview} alt="" className="mt-2 h-16 rounded-lg object-cover" />}
+                  {idImagePreview && idImagePreview.startsWith('http') ? (
+                    <div className="relative">
+                      <img src={idImagePreview} alt="ID" className="w-full h-20 object-cover rounded-lg border border-slate-200" />
+                      <button type="button" onClick={() => idImageRef.current?.click()} className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center text-white text-xs opacity-0 hover:opacity-100 transition-opacity">
+                        <Camera className="w-4 h-4 mr-1" />{t('تغيير', 'Change')}
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <button type="button" onClick={() => idImageRef.current?.click()} className="w-full h-10 px-3 border border-dashed border-slate-300 rounded-xl text-sm text-slate-500 hover:border-primary-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
+                        <Camera className="w-4 h-4" />
+                        {idImageFile ? t('تم التحديد', 'Selected') : t('اختر صورة', 'Choose image')}
+                      </button>
+                      {idImagePreview && <img src={idImagePreview} alt="" className="mt-2 h-16 rounded-lg object-cover" />}
+                    </>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('عقد المستأجر', 'Contract Document')}</label>
@@ -464,10 +498,25 @@ function Tenants({ language }: TenantsProps) {
                     const file = e.target.files?.[0]
                     if (file) { setContractFile(file); setContractPreview(file.name) }
                   }} />
-                  <button type="button" onClick={() => contractRef.current?.click()} className="w-full h-10 px-3 border border-dashed border-slate-300 rounded-xl text-sm text-slate-500 hover:border-primary-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
-                    <FileUp className="w-4 h-4" />
-                    {contractPreview || t('اختر ملف', 'Choose file')}
-                  </button>
+                  {contractPreview && contractPreview.startsWith('http') ? (
+                    <div className="relative">
+                      {isImageUrl(contractPreview) ? (
+                        <img src={contractPreview} alt="Contract" className="w-full h-20 object-cover rounded-lg border border-slate-200" />
+                      ) : (
+                        <div className="w-full h-20 flex items-center justify-center bg-slate-100 rounded-lg border border-slate-200">
+                          <FileUp className="w-8 h-8 text-slate-400" />
+                        </div>
+                      )}
+                      <button type="button" onClick={() => contractRef.current?.click()} className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center text-white text-xs opacity-0 hover:opacity-100 transition-opacity">
+                        <FileUp className="w-4 h-4 mr-1" />{t('تغيير', 'Change')}
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => contractRef.current?.click()} className="w-full h-10 px-3 border border-dashed border-slate-300 rounded-xl text-sm text-slate-500 hover:border-primary-400 hover:text-primary-600 transition-colors flex items-center justify-center gap-2">
+                      <FileUp className="w-4 h-4" />
+                      {contractFile ? t('تم التحديد', 'Selected') : t('اختر ملف', 'Choose file')}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -485,7 +534,7 @@ function Tenants({ language }: TenantsProps) {
 
       {showViewModal && viewingTenant && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-slate-800">{t('بيانات المستأجر', 'Tenant Details')}</h3>
               <button onClick={() => setShowViewModal(false)} className="text-slate-400 hover:text-slate-600">
@@ -502,91 +551,90 @@ function Tenants({ language }: TenantsProps) {
                   <p className="text-sm text-slate-500">{viewingTenant.email}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-slate-400" />
+                  <Phone className="w-4 h-4 text-slate-400 shrink-0" />
                   <span className="text-sm text-slate-600">{viewingTenant.phoneNumber}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Home className="w-4 h-4 text-slate-400" />
-                  <span className="text-sm text-slate-600">{t('منزل', 'House')} {viewingTenant.houseNumber}</span>
+                  <Home className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600">{t('فيلا', 'Villa')} {viewingTenant.houseNumber}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Hash className="w-4 h-4 text-slate-400" />
+                  <Hash className="w-4 h-4 text-slate-400 shrink-0" />
                   <span className="text-sm text-slate-600">{t('عقد', 'Contract')}: {viewingTenant.contractNumber}</span>
                 </div>
-                {viewingTenant.nationalId && (
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('هوية', 'ID')}: {viewingTenant.nationalId}</span>
-                  </div>
-                )}
-                {viewingTenant.nationality && (
-                  <div className="flex items-center gap-2">
-                    <Flag className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('جنسية', 'Nationality')}: {viewingTenant.nationality}</span>
-                  </div>
-                )}
-                {viewingTenant.contractStartDate && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('بداية', 'Start')}: {viewingTenant.contractStartDate}</span>
-                  </div>
-                )}
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-slate-400" />
-                  <span className="text-sm text-slate-600">{t('نهاية', 'End')}: {viewingTenant.contractEndDate}</span>
+                  <CreditCard className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600">{t('هوية', 'ID')}: {viewingTenant.nationalId || '—'}</span>
                 </div>
-                {viewingTenant.monthlyRent > 0 && (
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('إيجار شهري', 'Monthly Rent')}: {viewingTenant.monthlyRent.toLocaleString()} <CurrencySymbol /></span>
-                  </div>
-                )}
-                {viewingTenant.annualRent > 0 && (
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('إيجار سنوي', 'Annual Rent')}: {viewingTenant.annualRent.toLocaleString()} <CurrencySymbol /></span>
-                  </div>
-                )}
-                {viewingTenant.paymentMethod && (
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('طريقة الدفع', 'Payment')}: {viewingTenant.paymentMethod}</span>
-                  </div>
-                )}
-                {viewingTenant.paymentDueDay > 0 && (
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('يوم الدفع', 'Due Day')}: {viewingTenant.paymentDueDay}</span>
-                  </div>
-                )}
-                {viewingTenant.waterCost ? (
-                  <div className="flex items-center gap-2">
-                    <Droplets className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('تكاليف الماء', 'Water Cost')}: {viewingTenant.waterCost.toLocaleString()} <CurrencySymbol /></span>
-                  </div>
-                ) : null}
-                {viewingTenant.electricityMeter && (
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-slate-400" />
-                    <span className="text-sm text-slate-600">{t('عداد الكهرباء', 'Electricity')}: {viewingTenant.electricityMeter}</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <Flag className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600">{t('جنسية', 'Nationality')}: {viewingTenant.nationality || '—'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600">{t('بداية', 'Start')}: {viewingTenant.contractStartDate || '—'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600">{t('نهاية', 'End')}: {viewingTenant.contractEndDate || '—'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600">{t('إيجار شهري', 'Monthly')}: {viewingTenant.monthlyRent > 0 ? `${viewingTenant.monthlyRent.toLocaleString()} ` : '—'} <CurrencySymbol /></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600">{t('إيجار سنوي', 'Annual')}: {viewingTenant.annualRent > 0 ? `${viewingTenant.annualRent.toLocaleString()} ` : '—'} <CurrencySymbol /></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600">{t('الدفع', 'Payment')}: {viewingTenant.paymentMethod || '—'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600">{t('يوم الدفع', 'Due Day')}: {viewingTenant.paymentDueDay ?? '—'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Droplets className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600">{t('الماء', 'Water')}: {viewingTenant.waterCost ? `${viewingTenant.waterCost.toLocaleString()} ` : '—'} <CurrencySymbol /></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="text-sm text-slate-600">{t('كهرباء', 'Electricity')}: {viewingTenant.electricityMeter || '—'}</span>
+                </div>
               </div>
-              <div className="flex flex-col gap-2 pt-2">
-                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold w-fit ${viewingTenant.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${viewingTenant.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                   {viewingTenant.isActive ? t('نشط', 'Active') : t('غير نشط', 'Inactive')}
                 </span>
-                <div className="flex gap-3">
+                {viewingTenant.status && (
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${viewingTenant.status === 'Expired' ? 'bg-red-100 text-red-700' : viewingTenant.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                    {viewingTenant.status}
+                  </span>
+                )}
+              </div>
+              {(viewingTenant.idImage || viewingTenant.contractDocument) && (
+                <div className="grid grid-cols-2 gap-3 pt-1">
                   {viewingTenant.idImage && (
-                    <a href={viewingTenant.idImage} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-600 hover:underline flex items-center gap-1"><Camera className="w-3 h-3" />{t('صورة الهوية', 'ID Image')}</a>
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 mb-1">{t('صورة الهوية', 'ID Image')}</p>
+                      <a href={viewingTenant.idImage} target="_blank" rel="noopener noreferrer">
+                        <img src={viewingTenant.idImage} alt="ID" className="w-full h-28 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity" />
+                      </a>
+                    </div>
                   )}
                   {viewingTenant.contractDocument && (
-                    <a href={viewingTenant.contractDocument} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-600 hover:underline flex items-center gap-1"><FileUp className="w-3 h-3" />{t('العقد', 'Contract')}</a>
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 mb-1">{t('صورة العقد', 'Contract')}</p>
+                      <a href={viewingTenant.contractDocument} target="_blank" rel="noopener noreferrer">
+                        <img src={viewingTenant.contractDocument} alt="Contract" className="w-full h-28 object-cover rounded-lg border border-slate-200 hover:opacity-80 transition-opacity" />
+                      </a>
+                    </div>
                   )}
                 </div>
-              </div>
+              )}
             </div>
             <button onClick={() => setShowViewModal(false)} className="w-full h-10 mt-4 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200">
               {t('إغلاق', 'Close')}

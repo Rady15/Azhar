@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, User, Home, Loader2, Send, Calendar, Tag, MessageSquare, CheckCircle, Upload, LayoutList, Grid3X3 } from 'lucide-react'
+import { Plus, Edit, Eye, X, User, Home, Loader2, Send, Calendar, Tag, MessageSquare, CheckCircle, Upload, LayoutList, Grid3X3 } from 'lucide-react'
 import { api, API_BASE_URL } from '../services/api'
 
 interface Complaint {
@@ -25,16 +25,14 @@ interface ComplaintsProps {
 
 const STATUS_LABELS: Record<string, { ar: string, en: string }> = {
   Open: { ar: 'مفتوح', en: 'Open' },
-  Pending: { ar: 'قيد الانتظار', en: 'Pending' },
-  InProgress: { ar: 'قيد المعالجة', en: 'In Progress' },
+  UnderReview: { ar: 'قيد المراجعة', en: 'Under Review' },
   Resolved: { ar: 'تم الحل', en: 'Resolved' },
   Rejected: { ar: 'مرفوض', en: 'Rejected' }
 }
 
 const STATUS_STYLES: Record<string, string> = {
   Open: 'bg-blue-100 text-blue-700',
-  Pending: 'bg-amber-100 text-amber-700',
-  InProgress: 'bg-purple-100 text-purple-700',
+  UnderReview: 'bg-amber-100 text-amber-700',
   Resolved: 'bg-green-100 text-green-700',
   Rejected: 'bg-red-100 text-red-700'
 }
@@ -63,10 +61,10 @@ function Complaints({ language }: ComplaintsProps) {
 
   const normalizeStatus = (s: string): string => {
     const status = s || 'Open'
-    if (status === 'in_progress' || status === 'In Progress') return 'InProgress'
-    if (status === 'pending' || status === 'Pending') return 'Pending'
-    if (status === 'resolved' || status === 'Resolved') return 'Resolved'
-    if (status === 'rejected' || status === 'Rejected') return 'Rejected'
+    const lower = status.toLowerCase().replace(' ', '')
+    if (lower === 'underreview' || lower === 'inprogress' || lower === 'pending') return 'UnderReview'
+    if (lower === 'resolved') return 'Resolved'
+    if (lower === 'rejected') return 'Rejected'
     return 'Open'
   }
 
@@ -78,7 +76,7 @@ function Complaints({ language }: ComplaintsProps) {
     villaNumber: item.villaNumber || '',
     houseNumber: item.houseNumber || item.villaNumber || '',
     tenantName: item.tenantName || '',
-    category: item.category || 'other',
+    category: item.category || 'Other',
     status: normalizeStatus(item.status),
     createdAt: item.createdAt ? item.createdAt.split('T')[0] : '',
     resolvedAt: item.resolvedAt ? item.resolvedAt.split('T')[0] : undefined,
@@ -90,8 +88,9 @@ function Complaints({ language }: ComplaintsProps) {
   const getCategoryBadge = (category: string) => {
     const labels: Record<string, { ar: string, en: string }> = {
       noise: { ar: 'ضوضاء', en: 'Noise' },
-      maintenance: { ar: 'صيانة', en: 'Maintenance' },
-      behavior: { ar: 'سلوك', en: 'Behavior' },
+      cleanliness: { ar: 'نظافة', en: 'Cleanliness' },
+      security: { ar: 'أمن', en: 'Security' },
+      neighbors: { ar: 'جيران', en: 'Neighbors' },
       facilities: { ar: 'مرافق', en: 'Facilities' },
       other: { ar: 'أخرى', en: 'Other' }
     }
@@ -99,8 +98,9 @@ function Complaints({ language }: ComplaintsProps) {
     const label = labels[c] || { ar: category, en: category }
     const colors: Record<string, string> = {
       noise: 'bg-purple-100 text-purple-700',
-      maintenance: 'bg-blue-100 text-blue-700',
-      behavior: 'bg-orange-100 text-orange-700',
+      cleanliness: 'bg-cyan-100 text-cyan-700',
+      security: 'bg-red-100 text-red-700',
+      neighbors: 'bg-orange-100 text-orange-700',
       facilities: 'bg-teal-100 text-teal-700',
       other: 'bg-slate-100 text-slate-700'
     }
@@ -140,7 +140,7 @@ function Complaints({ language }: ComplaintsProps) {
     setEditingComplaint(null)
     setFormData({
       title: '', description: '', details: '', villaNumber: '', houseNumber: '',
-      tenantName: '', category: 'other', status: 'Open'
+      tenantName: '', category: 'Other', status: 'Open'
     })
     setImagePreview('')
     setImageFile(null)
@@ -166,23 +166,11 @@ function Complaints({ language }: ComplaintsProps) {
     setShowViewModal(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm(language === 'AR' ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete?')) {
-      try {
-        await api.deleteComplaint(id)
-        setComplaints(complaints.filter(c => c.id !== id))
-      } catch (err: any) {
-        console.error('Delete complaint error:', err)
-        alert(language === 'AR' ? `فشل الحذف: ${err.message}` : `Delete failed: ${err.message}`)
-      }
-    }
-  }
-
   const handleSave = async () => {
     setSaving(true)
     try {
       if (editingComplaint) {
-        const complaintStatusMap: Record<string, number> = { Open: 0, InProgress: 1, Resolved: 2, Rejected: 3 }
+        const complaintStatusMap: Record<string, number> = { Open: 0, UnderReview: 1, Resolved: 2, Rejected: 3 }
         const payload: Record<string, any> = {
           Reply: formData.reply || editingComplaint.reply || 'Processed by admin',
           AdminReply: formData.adminReply || editingComplaint.adminReply || 'Processed by admin',
@@ -220,7 +208,7 @@ function Complaints({ language }: ComplaintsProps) {
     if (!viewingComplaint) return
     setSendingReply(true)
     try {
-      const complaintStatusMap: Record<string, number> = { Open: 0, InProgress: 1, Resolved: 2, Rejected: 3 }
+      const complaintStatusMap: Record<string, number> = { Open: 0, UnderReview: 1, Resolved: 2, Rejected: 3 }
       await api.replyComplaint(viewingComplaint.id, {
         Reply: replyText || 'No reply',
         AdminReply: replyText || 'No reply',
@@ -281,7 +269,7 @@ function Complaints({ language }: ComplaintsProps) {
               <tr className="border-b border-slate-200">
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('العنوان', 'Title')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('المستأجر', 'Tenant')}</th>
-                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('المنزل', 'House')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الفيلا', 'Villa')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('النوع', 'Category')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الحالة', 'Status')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('التاريخ', 'Date')}</th>
@@ -301,7 +289,6 @@ function Complaints({ language }: ComplaintsProps) {
                     <div className="flex items-center gap-2">
                       <button onClick={() => handleView(complaint)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title={t('عرض', 'View')}><Eye className="w-4 h-4" /></button>
                       <button onClick={() => handleEdit(complaint)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg" title={t('تعديل', 'Edit')}><Edit className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(complaint.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title={t('حذف', 'Delete')}><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -319,14 +306,13 @@ function Complaints({ language }: ComplaintsProps) {
               </div>
               <p className="text-xs text-slate-400 mb-1">{complaint.tenantName || '—'} {complaint.createdAt ? `· ${complaint.createdAt}` : ''}</p>
               <div className="space-y-2 text-sm text-slate-600 mb-3">
-                <div className="flex justify-between"><span className="text-slate-400">{t('المنزل', 'House')}</span><span>{complaint.houseNumber || complaint.villaNumber || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">{t('الفيلا', 'Villa')}</span><span>{complaint.houseNumber || complaint.villaNumber || '—'}</span></div>
               </div>
               <div className="flex items-center justify-between pt-3 border-t border-slate-100">
                 {getStatusBadge(complaint.status)}
                 <div className="flex items-center gap-1">
                   <button onClick={() => handleView(complaint)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-3.5 h-3.5" /></button>
                   <button onClick={() => handleEdit(complaint)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"><Edit className="w-3.5 h-3.5" /></button>
-                  <button onClick={() => handleDelete(complaint.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
             </div>
@@ -356,7 +342,7 @@ function Complaints({ language }: ComplaintsProps) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('رقم المنزل', 'House Number')}</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('رقم الفيلا', 'Villa Number')}</label>
                   <input type="text" value={formData.houseNumber || ''} onChange={e => setFormData({ ...formData, houseNumber: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
                 <div>
@@ -367,12 +353,13 @@ function Complaints({ language }: ComplaintsProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('النوع', 'Category')}</label>
-                  <select value={formData.category || 'other'} onChange={e => setFormData({ ...formData, category: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
-                    <option value="noise">{t('ضوضاء', 'Noise')}</option>
-                    <option value="maintenance">{t('صيانة', 'Maintenance')}</option>
-                    <option value="behavior">{t('سلوك', 'Behavior')}</option>
-                    <option value="facilities">{t('مرافق', 'Facilities')}</option>
-                    <option value="other">{t('أخرى', 'Other')}</option>
+                  <select value={formData.category || 'Other'} onChange={e => setFormData({ ...formData, category: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
+                    <option value="Noise">{t('ضوضاء', 'Noise')}</option>
+                    <option value="Cleanliness">{t('نظافة', 'Cleanliness')}</option>
+                    <option value="Security">{t('أمن', 'Security')}</option>
+                    <option value="Neighbors">{t('جيران', 'Neighbors')}</option>
+                    <option value="Facilities">{t('مرافق', 'Facilities')}</option>
+                    <option value="Other">{t('أخرى', 'Other')}</option>
                   </select>
                 </div>
                 <div>
@@ -458,7 +445,7 @@ function Complaints({ language }: ComplaintsProps) {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <Home className="w-4 h-4 text-slate-400" />
-                  <span className="text-slate-600">{t('منزل', 'House')}: {viewingComplaint.houseNumber || viewingComplaint.villaNumber || '—'}</span>
+                  <span className="text-slate-600">{t('فيلا', 'Villa')}: {viewingComplaint.houseNumber || viewingComplaint.villaNumber || '—'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-slate-400" />
@@ -504,7 +491,7 @@ function Complaints({ language }: ComplaintsProps) {
                     <select value={replyStatus} onChange={e => setReplyStatus(e.target.value)} className="h-10 px-3 border border-slate-200 rounded-xl text-sm flex-1">
                       <option value="Resolved">{t('تم الحل', 'Resolved')}</option>
                       <option value="Rejected">{t('مرفوض', 'Rejected')}</option>
-                      <option value="InProgress">{t('قيد المعالجة', 'In Progress')}</option>
+                      <option value="UnderReview">{t('قيد المراجعة', 'Under Review')}</option>
                     </select>
                     <button onClick={handleSendReply} disabled={sendingReply} className="h-10 px-4 bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2">
                       {sendingReply ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}

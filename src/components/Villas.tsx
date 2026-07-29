@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, Home, Maximize, Bed, Bath, Upload, Loader2, Building, Hash, Check, Square, Clock, LayoutList, Grid3X3 } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, X, Home, Maximize, Bed, Bath, Upload, Loader2, Building, Hash, Check, Square, Clock, LayoutList, Grid3X3, User } from 'lucide-react'
 import { api, HouseModel, API_BASE_URL } from '../services/api'
 
 interface Villa {
@@ -12,8 +12,17 @@ interface Villa {
   bathroomsCount?: number
   hasGarage?: boolean
   hasGarden?: boolean
+  hasCentralAirConditioning?: boolean
+  isFurnished?: boolean
+  hasInstalledKitchen?: boolean
+  contractNumber?: string
+  contractStartDate?: string
+  contractEndDate?: string
   notes?: string
   images?: string[]
+  userId?: string
+  userDisplayName?: string
+  userEmail?: string
   createdAt?: string
 }
 
@@ -50,22 +59,18 @@ function Villas({ language }: VillasProps) {
     bathroomsCount: item.bathroomsCount || 0,
     hasGarage: item.hasGarage || false,
     hasGarden: item.hasGarden || false,
+    hasCentralAirConditioning: item.hasCentralAirConditioning || false,
+    isFurnished: item.isFurnished || false,
+    hasInstalledKitchen: item.hasInstalledKitchen || false,
+    contractNumber: item.contractNumber || '',
+    contractStartDate: item.contractStartDate || '',
+    contractEndDate: item.contractEndDate || '',
     notes: item.notes || '',
     images: (item.imageUrls || item.images || []).map(resolveImage),
+    userId: item.userId || '',
+    userDisplayName: item.userDisplayName || '',
+    userEmail: item.userEmail || '',
     createdAt: item.createdAt || ''
-  })
-
-  const mapToBackend = (villa: Partial<Villa>): HouseModel => ({
-    houseNumber: villa.houseNumber || '',
-    buildingNumber: villa.buildingNumber || '',
-    floorNumber: villa.floorNumber ?? 0,
-    area: villa.area || 0,
-    roomsCount: villa.roomsCount || 0,
-    bathroomsCount: villa.bathroomsCount || 0,
-    hasGarage: villa.hasGarage || false,
-    hasGarden: villa.hasGarden || false,
-    notes: villa.notes || '',
-    images: villa.images?.length ? villa.images : []
   })
 
   const buildSavePayload = (villa: Partial<Villa>): Record<string, any> => {
@@ -78,6 +83,12 @@ function Villas({ language }: VillasProps) {
       bathroomsCount: villa.bathroomsCount || 0,
       hasGarage: villa.hasGarage || false,
       hasGarden: villa.hasGarden || false,
+      hasCentralAirConditioning: villa.hasCentralAirConditioning || false,
+      isFurnished: villa.isFurnished || false,
+      hasInstalledKitchen: villa.hasInstalledKitchen || false,
+      contractNumber: villa.contractNumber || '',
+      contractStartDate: villa.contractStartDate || '',
+      contractEndDate: villa.contractEndDate || '',
       notes: villa.notes || ''
     }
     if (imageFile) {
@@ -114,7 +125,10 @@ function Villas({ language }: VillasProps) {
     setFormData({
       houseNumber: '', buildingNumber: '', floorNumber: 0,
       area: 0, roomsCount: 0, bathroomsCount: 0,
-      hasGarage: false, hasGarden: false, notes: '', images: []
+      hasGarage: false, hasGarden: false,
+      hasCentralAirConditioning: false, isFurnished: false, hasInstalledKitchen: false,
+      contractNumber: '', contractStartDate: '', contractEndDate: '',
+      notes: '', images: []
     })
     setImagePreview('')
     setImageFile(null)
@@ -137,8 +151,7 @@ function Villas({ language }: VillasProps) {
   const handleDelete = async (id: string | number) => {
     if (window.confirm(language === 'AR' ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete?')) {
       try {
-        const villa = villas.find(v => v.id === id)
-        await api.deleteVilla(String(id), villa ? mapToBackend(villa) : {} as HouseModel)
+        await api.deleteVilla(String(id))
         setVillas(villas.filter(v => v.id !== id))
       } catch (err: any) {
         console.error('Delete villa error:', err)
@@ -188,7 +201,7 @@ function Villas({ language }: VillasProps) {
   return (
     <div className="bg-white rounded-2xl p-6">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-slate-800">{t('المنازل', 'Houses')}</h2>
+        <h2 className="text-xl font-bold text-slate-800">{t('الفلل', 'Villas')}</h2>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 ml-2 border border-slate-200 rounded-lg p-0.5">
             <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-primary-100 text-primary-700' : 'text-slate-400 hover:text-slate-600'}`} title={t('عرض كقائمة', 'List view')}><LayoutList className="w-4 h-4" /></button>
@@ -196,7 +209,7 @@ function Villas({ language }: VillasProps) {
           </div>
           <button onClick={handleAdd} className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors">
             <Plus className="w-4 h-4" />
-            {t('إضافة منزل', 'Add House')}
+            {t('إضافة فيلا', 'Add Villa')}
           </button>
         </div>
       </div>
@@ -223,12 +236,15 @@ function Villas({ language }: VillasProps) {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-200">
-                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('رقم المنزل', 'House No.')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('رقم الفيلا', 'Villa No.')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('المبنى', 'Building')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الدور', 'Floor')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('المساحة', 'Area')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('غرف', 'Rooms')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('حمامات', 'Baths')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الحالة', 'Status')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('عقد', 'Contract')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('المستأجر', 'Tenant')}</th>
                 <th className="text-right py-3 px-4 font-semibold text-slate-600">{t('الإجراءات', 'Actions')}</th>
               </tr>
             </thead>
@@ -242,6 +258,16 @@ function Villas({ language }: VillasProps) {
                   <td className="py-3 px-4 text-slate-600">{villa.roomsCount}</td>
                   <td className="py-3 px-4 text-slate-600">{villa.bathroomsCount}</td>
                   <td className="py-3 px-4">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                      villa.userId ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${villa.userId ? 'bg-blue-500' : 'bg-green-500'}`} />
+                      {villa.userId ? t('مشغولة', 'Occupied') : t('متاحة', 'Available')}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-slate-600 text-xs">{villa.contractNumber || '—'}</td>
+                  <td className="py-3 px-4 text-slate-600 text-xs">{villa.userDisplayName || '—'}</td>
+                  <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
                       <button onClick={() => handleView(villa)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-4 h-4" /></button>
                       <button onClick={() => handleEdit(villa)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"><Edit className="w-4 h-4" /></button>
@@ -251,7 +277,7 @@ function Villas({ language }: VillasProps) {
                 </tr>
               ))}
               {villas.length === 0 && (
-                <tr><td colSpan={7} className="text-center py-12 text-slate-400">{t('لا توجد منازل مسجلة', 'No houses registered')}</td></tr>
+                <tr><td colSpan={10} className="text-center py-12 text-slate-400">{t('لا توجد منازل مسجلة', 'No houses registered')}</td></tr>
               )}
             </tbody>
           </table>
@@ -262,15 +288,28 @@ function Villas({ language }: VillasProps) {
             <div key={villa.id} className="border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow">
               <div className="h-48 bg-slate-100 relative">
                 {villa.images?.[0] ? (
-                  <img src={villa.images[0]} alt={`House ${villa.houseNumber}`} className="w-full h-full object-cover" />
+                  <img src={villa.images[0]} alt={`Villa ${villa.houseNumber}`} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <Home className="w-12 h-12 text-slate-300" />
                   </div>
                 )}
+                <span className={`absolute top-3 left-3 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-semibold shadow-sm ${
+                  villa.userId ? 'bg-blue-500 text-white' : 'bg-green-500 text-white'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${villa.userId ? 'bg-white' : 'bg-white'}`} />
+                  {villa.userId ? t('مشغولة', 'Occupied') : t('متاحة', 'Available')}
+                </span>
               </div>
               <div className="p-4">
-                <h3 className="font-bold text-slate-800 mb-2">{t('منزل', 'House')} {villa.houseNumber}</h3>
+                <div className="flex items-start justify-between mb-2">
+                  <h3 className="font-bold text-slate-800">{t('فيلا', 'Villa')} {villa.houseNumber}</h3>
+                </div>
+                {villa.userDisplayName && (
+                  <p className="text-xs text-slate-400 mb-2 flex items-center gap-1">
+                    <User className="w-3 h-3" /> {villa.userDisplayName}
+                  </p>
+                )}
                   <div className="space-y-1 text-sm text-slate-500 mb-3">
                     <div className="flex items-center gap-2">
                       <Building className="w-4 h-4" />
@@ -280,12 +319,19 @@ function Villas({ language }: VillasProps) {
                       <Maximize className="w-4 h-4" />
                       <span>{villa.area} {t('م²', 'm²')}</span>
                     </div>
-                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4">
                       <span className="flex items-center gap-1"><Bed className="w-4 h-4" /> {villa.roomsCount}</span>
                       <span className="flex items-center gap-1"><Bath className="w-4 h-4" /> {villa.bathroomsCount}</span>
                     </div>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {villa.hasGarage && <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">{t('جراج', 'Garage')}</span>}
+                      {villa.hasGarden && <span className="text-[10px] px-2 py-0.5 bg-green-50 text-green-700 rounded-full">{t('حديقة', 'Garden')}</span>}
+                      {villa.hasCentralAirConditioning && <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">{t('تكييف', 'AC')}</span>}
+                      {villa.isFurnished && <span className="text-[10px] px-2 py-0.5 bg-amber-50 text-amber-700 rounded-full">{t('مفروش', 'Furnished')}</span>}
+                      {villa.hasInstalledKitchen && <span className="text-[10px] px-2 py-0.5 bg-purple-50 text-purple-700 rounded-full">{t('مطبخ', 'Kitchen')}</span>}
+                    </div>
                   </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mt-2">
                   <div className="flex gap-1">
                     <button onClick={() => handleView(villa)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg">
                       <Eye className="w-4 h-4" />
@@ -309,7 +355,7 @@ function Villas({ language }: VillasProps) {
           <div className="bg-white rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-slate-800">
-                {editingVilla ? t('تعديل منزل', 'Edit House') : t('إضافة منزل', 'Add House')}
+                {editingVilla ? t('تعديل فيلا', 'Edit Villa') : t('إضافة فيلا', 'Add Villa')}
               </h3>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
@@ -318,7 +364,7 @@ function Villas({ language }: VillasProps) {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('رقم المنزل', 'House Number')} *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('رقم الفيلا', 'Villa Number')} *</label>
                   <input type="text" value={formData.houseNumber || ''} onChange={e => setFormData({ ...formData, houseNumber: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
                 <div>
@@ -326,7 +372,7 @@ function Villas({ language }: VillasProps) {
                   <input type="text" value={formData.buildingNumber || ''} onChange={e => setFormData({ ...formData, buildingNumber: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('الدور', 'Floor Number')} *</label>
                   <input type="number" value={formData.floorNumber ?? ''} onChange={e => setFormData({ ...formData, floorNumber: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
@@ -335,19 +381,29 @@ function Villas({ language }: VillasProps) {
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('المساحة', 'Area')}</label>
                   <input type="number" value={formData.area || ''} onChange={e => setFormData({ ...formData, area: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('غرف النوم', 'Rooms')}</label>
                   <input type="number" value={formData.roomsCount || ''} onChange={e => setFormData({ ...formData, roomsCount: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('الحمامات', 'Bathrooms')}</label>
                   <input type="number" value={formData.bathroomsCount || ''} onChange={e => setFormData({ ...formData, bathroomsCount: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('الملاحظات', 'Notes')}</label>
-                  <input type="text" value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('عقد رقم', 'Contract #')}</label>
+                  <input type="text" value={formData.contractNumber || ''} onChange={e => setFormData({ ...formData, contractNumber: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('بداية العقد', 'Contract Start')}</label>
+                  <input type="date" value={formData.contractStartDate ? formData.contractStartDate.slice(0,10) : ''} onChange={e => setFormData({ ...formData, contractStartDate: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('نهاية العقد', 'Contract End')}</label>
+                  <input type="date" value={formData.contractEndDate ? formData.contractEndDate.slice(0,10) : ''} onChange={e => setFormData({ ...formData, contractEndDate: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -362,6 +418,39 @@ function Villas({ language }: VillasProps) {
                   <span className="text-sm">{t('حديقة', 'Garden')}</span>
                 </label>
               </div>
+              <div className="grid grid-cols-3 gap-4">
+                <label className="flex items-center gap-2 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50">
+                  <input type="checkbox" checked={formData.hasCentralAirConditioning || false} onChange={e => setFormData({ ...formData, hasCentralAirConditioning: e.target.checked })} className="rounded" />
+                  <Square className="w-4 h-4 text-slate-500" />
+                  <span className="text-sm">{t('تكييف مركزي', 'Central AC')}</span>
+                </label>
+                <label className="flex items-center gap-2 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50">
+                  <input type="checkbox" checked={formData.isFurnished || false} onChange={e => setFormData({ ...formData, isFurnished: e.target.checked })} className="rounded" />
+                  <Square className="w-4 h-4 text-slate-500" />
+                  <span className="text-sm">{t('مفروش', 'Furnished')}</span>
+                </label>
+                <label className="flex items-center gap-2 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50">
+                  <input type="checkbox" checked={formData.hasInstalledKitchen || false} onChange={e => setFormData({ ...formData, hasInstalledKitchen: e.target.checked })} className="rounded" />
+                  <Square className="w-4 h-4 text-slate-500" />
+                  <span className="text-sm">{t('مطبخ راكب', 'Kitchen')}</span>
+                </label>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('الملاحظات', 'Notes')}</label>
+                <textarea rows={2} value={formData.notes || ''} onChange={e => setFormData({ ...formData, notes: e.target.value })} className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm" />
+              </div>
+              {editingVilla && (formData.userDisplayName || formData.userEmail) && (
+                <div className="grid grid-cols-2 gap-4 p-3 bg-slate-50 rounded-xl">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">{t('المستأجر', 'Tenant')}</label>
+                    <p className="text-sm font-medium text-slate-800">{formData.userDisplayName}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-500 mb-1">{t('البريد', 'Email')}</label>
+                    <p className="text-sm text-slate-600">{formData.userEmail}</p>
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{t('الصورة', 'Image')}</label>
                 <div className="border-2 border-dashed border-slate-200 rounded-xl p-4">
@@ -399,9 +488,9 @@ function Villas({ language }: VillasProps) {
 
       {showViewModal && viewingVilla && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6">
+          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-slate-800">{t('منزل', 'House')} {viewingVilla.houseNumber}</h3>
+              <h3 className="text-lg font-bold text-slate-800">{t('فيلا', 'Villa')} {viewingVilla.houseNumber}</h3>
               <button onClick={() => setShowViewModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
@@ -409,36 +498,75 @@ function Villas({ language }: VillasProps) {
             {viewingVilla.images?.[0] && (
               <img src={viewingVilla.images[0]} alt={`House ${viewingVilla.houseNumber}`} className="w-full h-48 object-cover rounded-xl mb-4" />
             )}
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <Building className="w-4 h-4 text-slate-400" />
+                <Building className="w-4 h-4 text-slate-400 shrink-0" />
                 <span>{t('مبنى', 'Bldg')} {viewingVilla.buildingNumber}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Hash className="w-4 h-4 text-slate-400" />
+                <Hash className="w-4 h-4 text-slate-400 shrink-0" />
                 <span>{t('دور', 'Floor')} {viewingVilla.floorNumber}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Maximize className="w-4 h-4 text-slate-400" />
+                <Maximize className="w-4 h-4 text-slate-400 shrink-0" />
                 <span>{viewingVilla.area} {t('م²', 'm²')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Bed className="w-4 h-4 text-slate-400" />
+                <Bed className="w-4 h-4 text-slate-400 shrink-0" />
                 <span>{viewingVilla.roomsCount} {t('غرف', 'rooms')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Bath className="w-4 h-4 text-slate-400" />
+                <Bath className="w-4 h-4 text-slate-400 shrink-0" />
                 <span>{viewingVilla.bathroomsCount} {t('حمامات', 'baths')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-slate-400" />
+                <Check className="w-4 h-4 text-slate-400 shrink-0" />
                 <span>{t('جراج', 'Garage')}: {viewingVilla.hasGarage ? t('نعم', 'Yes') : t('لا', 'No')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-slate-400" />
+                <Check className="w-4 h-4 text-slate-400 shrink-0" />
                 <span>{t('حديقة', 'Garden')}: {viewingVilla.hasGarden ? t('نعم', 'Yes') : t('لا', 'No')}</span>
               </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-slate-400 shrink-0" />
+                <span>{t('تكييف مركزي', 'Central AC')}: {viewingVilla.hasCentralAirConditioning ? t('نعم', 'Yes') : t('لا', 'No')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-slate-400 shrink-0" />
+                <span>{t('مفروش', 'Furnished')}: {viewingVilla.isFurnished ? t('نعم', 'Yes') : t('لا', 'No')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-slate-400 shrink-0" />
+                <span>{t('مطبخ راكب', 'Kitchen')}: {viewingVilla.hasInstalledKitchen ? t('نعم', 'Yes') : t('لا', 'No')}</span>
+              </div>
+              {viewingVilla.contractNumber && (
+                <div className="flex items-center gap-2">
+                  <Hash className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>{t('عقد', 'Contract')}: {viewingVilla.contractNumber}</span>
+                </div>
+              )}
+              {viewingVilla.contractStartDate && (
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>{t('بداية العقد', 'Start')}: {new Date(viewingVilla.contractStartDate).toLocaleDateString()}</span>
+                </div>
+              )}
+              {viewingVilla.contractEndDate && (
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span>{t('نهاية العقد', 'End')}: {new Date(viewingVilla.contractEndDate).toLocaleDateString()}</span>
+                </div>
+              )}
             </div>
+            {(viewingVilla.userDisplayName || viewingVilla.userEmail) && (
+              <div className="mt-4 p-3 bg-primary-50 rounded-xl flex items-center gap-3 text-sm">
+                <User className="w-5 h-5 text-primary-600 shrink-0" />
+                <div>
+                  <p className="font-medium text-slate-800">{viewingVilla.userDisplayName || '—'}</p>
+                  <p className="text-slate-500 text-xs">{viewingVilla.userEmail || '—'}</p>
+                </div>
+              </div>
+            )}
             {viewingVilla.notes && (
               <p className="mt-3 p-3 bg-slate-50 rounded-lg text-sm text-slate-600">{viewingVilla.notes}</p>
             )}

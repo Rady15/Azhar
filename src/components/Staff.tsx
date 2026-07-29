@@ -36,6 +36,7 @@ export default function Staff({ language }: StaffProps) {
     fullName: '',
     email: '',
     phoneNumber: '',
+    password: '',
     isActive: true,
     permissions: [] as string[]
   })
@@ -80,7 +81,7 @@ export default function Staff({ language }: StaffProps) {
 
   const openCreate = () => {
     setEditingStaff(null)
-    setFormData({ fullName: '', email: '', phoneNumber: '', isActive: true, permissions: ALL_PERMISSIONS.map(p => p.key) })
+    setFormData({ fullName: '', email: '', phoneNumber: '', password: '', isActive: true, permissions: ALL_PERMISSIONS.map(p => p.key) })
     setImageFile(null)
     setImagePreview('')
     setShowModal(true)
@@ -92,6 +93,7 @@ export default function Staff({ language }: StaffProps) {
       fullName: member.fullName,
       email: member.email,
       phoneNumber: member.phoneNumber || '',
+      password: '',
       isActive: member.isActive ?? true,
       permissions: member.permissions ?? ALL_PERMISSIONS.map(p => p.key)
     })
@@ -117,24 +119,35 @@ export default function Staff({ language }: StaffProps) {
   }
 
   const handleSave = async () => {
-    if (!formData.fullName || !formData.email) return
+    if (!formData.fullName || (!editingStaff && !formData.email)) return
 
     setSaving(true)
     try {
-      const payload: Record<string, any> = {
-        fullName: formData.fullName,
-        email: formData.email,
-        phoneNumber: formData.phoneNumber,
-        isActive: formData.isActive,
-        permissions: formData.permissions
-      }
-      if (imageFile) {
-        payload.profileImage = imageFile
-      }
       if (editingStaff && editingStaff.id) {
+        const payload: Record<string, any> = {
+          FullName: formData.fullName,
+        }
+        if (imageFile) {
+          payload.ProfileImage = imageFile
+        }
+        if (formData.email) payload.Email = formData.email
+        if (formData.phoneNumber) payload.PhoneNumber = formData.phoneNumber
+        payload.isActive = formData.isActive
+        payload.permissions = formData.permissions
         const updated = await api.updateStaff(editingStaff.id, payload)
         setStaff(prev => prev.map(m => m.id === editingStaff.id ? { ...m, ...updated } : m))
       } else {
+        const payload: Record<string, any> = {
+          FullName: formData.fullName,
+          Email: formData.email,
+          PhoneNumber: formData.phoneNumber,
+          Password: formData.password,
+        }
+        if (imageFile) {
+          payload.ProfileImage = imageFile
+        }
+        payload.isActive = formData.isActive
+        payload.permissions = formData.permissions
         const created = await api.createStaff(payload)
         setStaff(prev => [created, ...prev])
       }
@@ -350,6 +363,12 @@ export default function Staff({ language }: StaffProps) {
                 <label className="block text-sm font-medium text-slate-700 mb-1">{language === 'AR' ? 'رقم الهاتف' : 'Phone Number'}</label>
                 <input type="tel" value={formData.phoneNumber} onChange={e => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
               </div>
+              {!editingStaff && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{language === 'AR' ? 'كلمة المرور' : 'Password'} *</label>
+                  <input type="password" value={formData.password} onChange={e => setFormData(prev => ({ ...prev, password: e.target.value }))} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">{language === 'AR' ? 'الصورة الشخصية' : 'Profile Image'}</label>
                 <div className="border-2 border-dashed border-slate-200 rounded-xl p-4">

@@ -1,11 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Header from './components/Header'
 import Sidebar from './components/Sidebar'
-import StatsCards from './components/StatsCards'
-import ChartSection from './components/ChartSection'
-import RecentUpdates from './components/RecentUpdates'
-import PropertyCard from './components/PropertyCard'
-import MaintenanceChart from './components/MaintenanceChart'
+import Dashboard from './components/Dashboard'
 import Login from './components/Login'
 import Tenants from './components/Tenants'
 import Villas from './components/Villas'
@@ -33,39 +29,64 @@ function App() {
   const [userPermissions, setUserPermissions] = useState<string[]>(ALL_TABS)
 
   const [notifications, setNotifications] = useState<Array<{ id: number; title: string; message: string; time: string; unread: boolean }>>([])
+  const prevIdsRef = useRef<Set<number>>(new Set())
+  const [hasNewNotification, setHasNewNotification] = useState(false)
+  const notifIdRef = useRef(1)
 
-  useEffect(() => {
+  const fetchNotifications = useCallback(() => {
     if (!isLoggedIn) return
+    const prevIds = prevIdsRef.current
     Promise.allSettled([
       api.getComplaints(),
       api.getMaintenance(),
       api.getAnnouncements()
     ]).then(([complaintsRes, maintenanceRes, announcementsRes]) => {
       const items: Array<{ id: number; title: string; message: string; time: string; unread: boolean }> = []
-      let id = 1
+      let added = false
 
       if (announcementsRes.status === 'fulfilled') {
         const list = Array.isArray(announcementsRes.value) ? announcementsRes.value : []
         list.slice(0, 3).forEach((a: any) => {
-          items.push({ id: id++, title: a.title || (language === 'AR' ? 'إعلان' : 'Announcement'), message: a.description || a.content || '', time: a.createdAt || '', unread: true })
+          const id = notifIdRef.current++
+          items.push({ id, title: a.title || (language === 'AR' ? 'إعلان' : 'Announcement'), message: a.description || a.content || '', time: a.createdAt || '', unread: !prevIds.has(id) })
+          if (!prevIds.has(id)) added = true
         })
       }
       if (complaintsRes.status === 'fulfilled') {
         const list = Array.isArray(complaintsRes.value) ? complaintsRes.value : (complaintsRes.value as any)?.data ?? []
         list.slice(0, 3).forEach((c: any) => {
-          items.push({ id: id++, title: c.title || (language === 'AR' ? 'شكوى' : 'Complaint'), message: c.description || `${language === 'AR' ? 'فيلا' : 'Villa'} ${c.villaNumber || ''}`, time: c.createdAt || '', unread: true })
+          const id = notifIdRef.current++
+          items.push({ id, title: c.title || (language === 'AR' ? 'شكوى' : 'Complaint'), message: c.description || `${language === 'AR' ? 'فيلا' : 'Villa'} ${c.villaNumber || ''}`, time: c.createdAt || '', unread: !prevIds.has(id) })
+          if (!prevIds.has(id)) added = true
         })
       }
       if (maintenanceRes.status === 'fulfilled') {
         const list = Array.isArray(maintenanceRes.value) ? maintenanceRes.value : (maintenanceRes.value as any)?.data ?? []
         list.slice(0, 3).forEach((m: any) => {
-          items.push({ id: id++, title: m.category || (language === 'AR' ? 'صيانة' : 'Maintenance'), message: m.description || `${language === 'AR' ? 'وحدة' : 'Unit'} ${m.villaNumber || ''}`, time: m.createdAt || '', unread: true })
+          const id = notifIdRef.current++
+          items.push({ id, title: m.category || (language === 'AR' ? 'صيانة' : 'Maintenance'), message: m.description || `${language === 'AR' ? 'وحدة' : 'Unit'} ${m.villaNumber || ''}`, time: m.createdAt || '', unread: !prevIds.has(id) })
+          if (!prevIds.has(id)) added = true
         })
       }
 
-      setNotifications(items.slice(0, 5))
+      const result = items.slice(0, 5)
+      prevIdsRef.current = new Set(result.map(n => n.id))
+      setNotifications(result)
+      if (added) setHasNewNotification(true)
     })
   }, [isLoggedIn, language])
+
+  useEffect(() => {
+    if (!isLoggedIn) return
+    fetchNotifications()
+    const interval = setInterval(fetchNotifications, 30000)
+    return () => clearInterval(interval)
+  }, [isLoggedIn, language, fetchNotifications])
+
+  const markAllRead = useCallback(() => {
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })))
+    setHasNewNotification(false)
+  }, [])
 
   const handleLogin = (_username: string) => {
     setIsLoggedIn(true)
@@ -91,31 +112,7 @@ function App() {
 
     switch (activeTab) {
       case 'dashboard':
-        return (
-          <>
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-slate-800 mb-1">
-                {language === 'AR' ? `مرحباً بك، ${userName}` : `Welcome, ${userName}`}
-              </h1>
-              <p className="text-slate-500 text-sm">
-                {language === 'AR' ? 'نظرة عامة على حالة المجمع السكني لهذا اليوم' : 'Overview of the residential complex status for today'}
-              </p>
-            </div>
-            <StatsCards language={language} />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 mt-6">
-              <div className="lg:col-span-2">
-                <ChartSection language={language} />
-              </div>
-              <div>
-                <RecentUpdates language={language} />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <PropertyCard language={language} />
-              <MaintenanceChart language={language} />
-            </div>
-          </>
-        )
+        return <Dashboard language={language} userName={userName} />
       case 'tenants':
         return hasAccess('tenants') ? <Tenants language={language} /> : noAccess
       case 'villas':
@@ -159,6 +156,8 @@ function App() {
         setActiveTab={setActiveTab}
         userName={userName}
         permissions={userPermissions}
+        hasNewNotification={hasNewNotification}
+        onMarkRead={markAllRead}
       />
 
       <div className="flex">

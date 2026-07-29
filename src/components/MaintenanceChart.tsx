@@ -4,14 +4,11 @@ import { Zap, Droplets, Wind, Wrench, AlertTriangle } from 'lucide-react'
 import { api, MaintenanceModel } from '../services/api'
 
 const CATEGORY_CONFIG: Record<string, { labelAr: string; labelEn: string; color: string; icon: any }> = {
-  كهرباء: { labelAr: 'كهرباء', labelEn: 'Electricity', color: '#16a34a', icon: Zap },
-  كهربائية: { labelAr: 'كهرباء', labelEn: 'Electricity', color: '#16a34a', icon: Zap },
-  سباكة: { labelAr: 'سباكة', labelEn: 'Plumbing', color: '#3b82f6', icon: Droplets },
-  مياه: { labelAr: 'مياه', labelEn: 'Water', color: '#3b82f6', icon: Droplets },
-  تكييف: { labelAr: 'تكييف', labelEn: 'AC', color: '#f59e0b', icon: Wind },
-  تصليح: { labelAr: 'تصليح', labelEn: 'Repair', color: '#8b5cf6', icon: Wrench },
-  صيانة: { labelAr: 'صيانة', labelEn: 'Maintenance', color: '#8b5cf6', icon: Wrench },
-  general: { labelAr: 'أخرى', labelEn: 'Other', color: '#94a3b8', icon: AlertTriangle },
+  Electrical: { labelAr: 'كهرباء', labelEn: 'Electrical', color: '#16a34a', icon: Zap },
+  Plumbing: { labelAr: 'سباكة', labelEn: 'Plumbing', color: '#3b82f6', icon: Droplets },
+  AC: { labelAr: 'تكييف', labelEn: 'AC', color: '#f59e0b', icon: Wind },
+  Carpentry: { labelAr: 'نجارة', labelEn: 'Carpentry', color: '#8b5cf6', icon: Wrench },
+  Other: { labelAr: 'أخرى', labelEn: 'Other', color: '#94a3b8', icon: AlertTriangle },
 }
 
 interface ChartItem {
