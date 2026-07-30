@@ -29,6 +29,8 @@ function App() {
   const [userName, setUserName] = useState(localStorage.getItem('azhar_name') || localStorage.getItem('azhar_email') || 'Admin')
   const [userPermissions, setUserPermissions] = useState<string[]>(ALL_TABS)
 
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
   const [notifications, setNotifications] = useState<Array<{ id: number; title: string; message: string; time: string; unread: boolean }>>([])
   const prevIdsRef = useRef<Set<number>>(new Set())
   const [hasNewNotification, setHasNewNotification] = useState(false)
@@ -165,12 +167,14 @@ function App() {
         permissions={userPermissions}
         hasNewNotification={hasNewNotification}
         onMarkRead={markAllRead}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
       />
 
       <div className="flex">
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} language={language} userName={userName} permissions={userPermissions} />
+          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} language={language} userName={userName} permissions={userPermissions} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-          <main className={`flex-1 ${language === 'AR' ? 'mr-72' : 'ml-72'} p-6 pt-24`}>
+          <main className={`flex-1 ${language === 'AR' ? 'mr-0 md:mr-72' : 'ml-0 md:ml-72'} p-4 md:p-6 pt-20 md:pt-24`}>
             {renderContent()}
           </main>
         </div>

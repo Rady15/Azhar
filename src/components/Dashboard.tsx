@@ -177,7 +177,7 @@ export default function Dashboard({ language, userName }: DashboardProps) {
   return (
     <div className="space-y-6">
       {/* ── Welcome Banner ── */}
-      <div className="relative rounded-2xl p-6 text-white card-shadow overflow-hidden" style={{ backgroundImage: 'url(/bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      <div className="relative rounded-2xl p-4 md:p-6 text-white card-shadow overflow-hidden" style={{ backgroundImage: 'url(/bg.png)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
         <div className="absolute inset-0 bg-primary-800/75" />
         <div className="relative z-10">
         <div className="flex items-start justify-between">
@@ -245,7 +245,7 @@ export default function Dashboard({ language, userName }: DashboardProps) {
       {/* ── Charts + Activity Row ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Maintenance Chart */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-6 card-shadow border border-slate-100">
+        <div className="lg:col-span-2 bg-white rounded-2xl p-4 md:p-6 card-shadow border border-slate-100">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-bold text-slate-800">{t('طلبات الصيانة', 'Maintenance Requests')}</h3>
@@ -281,7 +281,7 @@ export default function Dashboard({ language, userName }: DashboardProps) {
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white rounded-2xl p-6 card-shadow border border-slate-100">
+        <div className="bg-white rounded-2xl p-4 md:p-6 card-shadow border border-slate-100">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-slate-800">{t('آخر النشاطات', 'Recent Activity')}</h3>
           </div>
@@ -311,7 +311,7 @@ export default function Dashboard({ language, userName }: DashboardProps) {
       {/* ── Bottom Row ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Maintenance Distribution */}
-        <div className="bg-white rounded-2xl p-6 card-shadow border border-slate-100">
+        <div className="bg-white rounded-2xl p-4 md:p-6 card-shadow border border-slate-100">
           <div className="mb-5">
             <h3 className="text-lg font-bold text-slate-800">{t('توزيع الصيانة', 'Maintenance Distribution')}</h3>
             <p className="text-sm text-slate-400 mt-0.5">{loading ? '...' : `${t('إجمالي', 'Total')}: ${maintenance.length} ${t('طلب', 'requests')}`}</p>

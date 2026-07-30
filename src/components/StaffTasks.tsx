@@ -99,7 +99,7 @@ export default function StaffTasks({ language }: StaffTasksProps) {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-6">
         <div className="bg-white rounded-2xl p-4 border border-slate-100">
           <p className="text-xs text-slate-400 mb-1">{t('المجموع', 'Total')}</p>
           <p className="text-2xl font-bold text-slate-800">{tasks.length}</p>
@@ -143,9 +143,9 @@ export default function StaffTasks({ language }: StaffTasksProps) {
             const lbl = language === 'AR' ? statusLabels : statusLabelsEn
             const color = statusColors[task.status] || 'bg-slate-50 text-slate-500'
             return (
-              <div key={task.id} className="bg-white rounded-2xl p-5 border border-slate-100 hover:shadow-sm transition-shadow">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
+              <div key={task.id} className="bg-white rounded-2xl p-4 md:p-5 border border-slate-100 hover:shadow-sm transition-shadow">
+                <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0 w-full sm:w-auto">
                     <div className="flex items-center gap-2 mb-2">
                       <span className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold ${color}`}>{lbl[task.status] || task.status}</span>
                       {task.requestNumber && <span className="text-[11px] text-slate-400 font-mono">{task.requestNumber}</span>}
@@ -167,7 +167,7 @@ export default function StaffTasks({ language }: StaffTasksProps) {
 
                   {/* Action Buttons */}
                   {task.status !== 'Completed' && task.status !== 'Cancelled' && (
-                    <div className="flex gap-1.5 shrink-0">
+                    <div className="flex gap-1.5 shrink-0 self-end sm:self-center">
                       {(task.status === 'Submitted' || task.status === 'Assigned') && (
                         <button
                           onClick={() => updateStatus(task.id, task.requestId, 2)}
@@ -197,12 +197,12 @@ export default function StaffTasks({ language }: StaffTasksProps) {
                     </div>
                   )}
                   {task.status === 'Completed' && (
-                    <span className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl shrink-0">
+                    <span className="flex items-center gap-1 text-xs text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl shrink-0 self-end sm:self-center">
                       <CheckCircle className="w-3.5 h-3.5" />{t('مكتمل', 'Done')}
                     </span>
                   )}
                   {task.status === 'Cancelled' && (
-                    <span className="flex items-center gap-1 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl shrink-0">
+                    <span className="flex items-center gap-1 text-xs text-slate-500 bg-slate-50 px-3 py-1.5 rounded-xl shrink-0 self-end sm:self-center">
                       <X className="w-3.5 h-3.5" />{t('ملغى', 'Cancelled')}
                     </span>
                   )}

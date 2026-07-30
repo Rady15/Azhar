@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Search, Bell, Globe, ChevronDown, LogOut, Users, Home, Wrench, AlertCircle, CreditCard, Mail, FileBarChart, CalendarCheck, Building2, Briefcase } from 'lucide-react'
+import { Search, Bell, Globe, ChevronDown, LogOut, Users, Home, Wrench, AlertCircle, CreditCard, Mail, FileBarChart, CalendarCheck, Building2, Briefcase, Menu } from 'lucide-react'
 
 interface Notification {
   id: number
@@ -23,6 +23,8 @@ interface HeaderProps {
   permissions?: string[]
   hasNewNotification?: boolean
   onMarkRead?: () => void
+  sidebarOpen?: boolean
+  setSidebarOpen?: (open: boolean) => void
 }
 
 interface SearchResult {
@@ -32,7 +34,7 @@ interface SearchResult {
   category: string
 }
 
-function Header({ language, setLanguage, notifications, showNotifications, setShowNotifications, onLogout, searchQuery, setSearchQuery, setActiveTab, userName, permissions, hasNewNotification, onMarkRead }: HeaderProps) {
+function Header({ language, setLanguage, notifications, showNotifications, setShowNotifications, onLogout, searchQuery, setSearchQuery, setActiveTab, userName, permissions, hasNewNotification, onMarkRead, sidebarOpen, setSidebarOpen }: HeaderProps) {
   const unreadCount = notifications.filter(n => n.unread).length
   const [showSuggestions, setShowSuggestions] = useState(false)
 
@@ -74,12 +76,17 @@ function Header({ language, setLanguage, notifications, showNotifications, setSh
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 z-50 flex items-center justify-between px-6">
+    <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 z-50 flex items-center justify-between px-3 md:px-6">
+      {/* Left: Hamburger + Logo */}
       <div className="flex items-center gap-2">
-        <img src="/logo.png" alt="Logo" className="h-10 w-auto rounded-lg object-contain" />
+        <button onClick={() => setSidebarOpen?.(!sidebarOpen)} className="p-2 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors lg:hidden" aria-label="Toggle sidebar">
+          <Menu className="w-5 h-5" />
+        </button>
+        <img src="/logo.png" alt="Logo" className="h-8 md:h-10 w-auto rounded-lg object-contain" />
       </div>
 
-      <div className="flex-1 max-w-xl mx-8 relative">
+      {/* Search - hidden on very small screens */}
+      <div className="hidden md:block flex-1 max-w-xl mx-4 lg:mx-8 relative">
         <div className="relative">
           <Search className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 ${language === 'AR' ? 'right-3' : 'left-3'}`} />
           <input
@@ -139,7 +146,7 @@ function Header({ language, setLanguage, notifications, showNotifications, setSh
           </button>
 
           {showNotifications && (
-            <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
+            <div className="absolute left-0 lg:left-auto lg:right-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
               <div className="p-3 border-b border-slate-100 flex items-center justify-between">
                 <h3 className="font-semibold text-slate-800">{language === 'AR' ? 'الإشعارات' : 'Notifications'}</h3>
                 {unreadCount > 0 && (
@@ -169,13 +176,13 @@ function Header({ language, setLanguage, notifications, showNotifications, setSh
           <LogOut className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-3">
-          <div className={language === 'AR' ? 'text-right' : 'text-left'}>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className={`hidden sm:block ${language === 'AR' ? 'text-right' : 'text-left'}`}>
             <p className="text-sm font-semibold text-slate-700">{userName || 'Admin'}</p>
             <p className="text-xs text-slate-400">{language === 'AR' ? 'مدير النظام' : 'Admin'}</p>
           </div>
-          <div className="w-9 h-9 bg-primary-100 rounded-full flex items-center justify-center border-2 border-primary-200">
-            <span className="text-primary-700 font-bold text-sm">{userName ? userName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : 'AD'}</span>
+          <div className="w-8 h-8 md:w-9 md:h-9 bg-primary-100 rounded-full flex items-center justify-center border-2 border-primary-200">
+            <span className="text-primary-700 font-bold text-xs md:text-sm">{userName ? userName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : 'AD'}</span>
           </div>
         </div>
       </div>

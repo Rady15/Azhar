@@ -21,6 +21,8 @@ interface SidebarProps {
   language: 'AR' | 'EN'
   userName?: string
   permissions: string[]
+  sidebarOpen: boolean
+  setSidebarOpen: (open: boolean) => void
 }
 
 const tabLabels: Record<TabType, { AR: string; EN: string }> = {
@@ -53,19 +55,26 @@ const navItems: { icon: typeof LayoutDashboard; tab: TabType }[] = [
   { icon: ListChecks, tab: 'my-tasks' },
 ]
 
-function Sidebar({ activeTab, setActiveTab, language, userName, permissions }: SidebarProps) {
+function Sidebar({ activeTab, setActiveTab, language, userName, permissions, sidebarOpen, setSidebarOpen }: SidebarProps) {
   const getLabel = (tab: TabType) => tabLabels[tab][language]
   const visibleNavItems = navItems.filter(item => permissions.includes(item.tab))
   const isAdmin = permissions.length > 1
-  
-  return (
-    <aside className={`fixed top-16 bottom-0 w-72 bg-white border-slate-200 flex flex-col z-40 ${language === 'AR' ? 'right-0 border-l' : 'left-0 border-r'}`}>
+
+  const handleTabClick = (tab: TabType) => {
+    setActiveTab(tab)
+    setSidebarOpen(false)
+  }
+
+  if (visibleNavItems.length === 0) return null
+
+  const content = (
+    <>
       <nav className="flex-1 p-4 overflow-y-auto">
         <ul className="space-y-1">
           {visibleNavItems.map((item) => (
             <li key={item.tab}>
               <button
-                onClick={() => setActiveTab(item.tab)}
+                onClick={() => handleTabClick(item.tab)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                   activeTab === item.tab
                     ? 'bg-primary-50 text-primary-700 shadow-sm'
@@ -91,7 +100,29 @@ function Sidebar({ activeTab, setActiveTab, language, userName, permissions }: S
           </div>
         </div>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      <aside className={`hidden lg:flex fixed top-16 bottom-0 w-72 bg-white border-slate-200 flex-col z-40 ${
+        language === 'AR' ? 'right-0 border-l' : 'left-0 border-r'
+      }`}>
+        {content}
+      </aside>
+
+      {sidebarOpen && (
+        <aside className={`fixed top-16 bottom-0 w-72 bg-white border-slate-200 z-40 lg:hidden flex flex-col ${
+          language === 'AR' ? 'right-0 border-l' : 'left-0 border-r'
+        }`}>
+          {content}
+        </aside>
+      )}
+    </>
   )
 }
 
