@@ -14,11 +14,12 @@ import Bookings from './components/Bookings'
 import Facilities from './components/Facilities'
 import Staff from './components/Staff'
 import StaffTasks from './components/StaffTasks'
+import Profile from './components/Profile'
 import { api } from './services/api'
 
-type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'staff' | 'my-tasks'
+type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'staff' | 'my-tasks' | 'profile'
 
-const ALL_TABS: TabType[] = ['dashboard', 'tenants', 'villas', 'maintenance', 'complaints', 'payments', 'ads', 'reports', 'facilities', 'bookings', 'staff', 'my-tasks']
+const ALL_TABS: TabType[] = ['dashboard', 'tenants', 'villas', 'maintenance', 'complaints', 'payments', 'ads', 'reports', 'facilities', 'bookings', 'staff', 'my-tasks', 'profile']
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -142,6 +143,8 @@ function App() {
         return hasAccess('staff') ? <Staff language={language} /> : noAccess
       case 'my-tasks':
         return <StaffTasks language={language} />
+      case 'profile':
+        return <Profile language={language} />
       default:
         return null
     }

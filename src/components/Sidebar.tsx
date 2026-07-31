@@ -13,7 +13,7 @@ import {
   ListChecks
 } from 'lucide-react'
 
-type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'staff' | 'my-tasks'
+type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'staff' | 'my-tasks' | 'profile'
 
 interface SidebarProps {
   activeTab: TabType
@@ -37,7 +37,8 @@ const tabLabels: Record<TabType, { AR: string; EN: string }> = {
   facilities: { AR: 'إدارة المرافق', EN: 'Communal Facilities' },
   bookings: { AR: 'حجوزات المرافق', EN: 'Facility Bookings' },
   staff: { AR: 'فريق العمل', EN: 'Staff' },
-  'my-tasks': { AR: 'مهامي', EN: 'My Tasks' }
+  'my-tasks': { AR: 'مهامي', EN: 'My Tasks' },
+  profile: { AR: 'الملف الشخصي', EN: 'Profile' }
 }
 
 const navItems: { icon: typeof LayoutDashboard; tab: TabType }[] = [
@@ -90,7 +91,13 @@ function Sidebar({ activeTab, setActiveTab, language, userName, permissions, sid
       </nav>
 
       <div className="p-4 border-t border-slate-100">
-        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+        <button
+          onClick={() => handleTabClick('profile')}
+          className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
+            activeTab === 'profile' ? 'bg-primary-50' : 'bg-slate-50 hover:bg-slate-100'
+          }`}
+          title={language === 'AR' ? 'الملف الشخصي' : 'Profile'}
+        >
           <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
             <span className="text-primary-700 font-bold text-xs">{isAdmin ? 'A' : 'S'}</span>
           </div>
@@ -98,7 +105,7 @@ function Sidebar({ activeTab, setActiveTab, language, userName, permissions, sid
             <p className="text-sm font-semibold text-slate-700">{userName || 'Admin'}</p>
             <p className="text-xs text-slate-400">{isAdmin ? (language === 'AR' ? 'مدير النظام' : 'System Admin') : (language === 'AR' ? 'موظف' : 'Staff Member')}</p>
           </div>
-        </div>
+        </button>
       </div>
     </>
   )

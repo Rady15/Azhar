@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Search, Bell, Globe, ChevronDown, LogOut, Users, Home, Wrench, AlertCircle, CreditCard, Mail, FileBarChart, CalendarCheck, Building2, Briefcase, Menu } from 'lucide-react'
+import { Search, Bell, Globe, ChevronDown, LogOut, Users, Home, Wrench, AlertCircle, CreditCard, Mail, FileBarChart, CalendarCheck, Building2, Briefcase, Menu, UserRound } from 'lucide-react'
 
 interface Notification {
   id: number
@@ -56,10 +56,11 @@ function Header({ language, setLanguage, notifications, showNotifications, setSh
     { id: 'bookings-add', label: language === 'AR' ? 'إضافة حجز' : 'Add Booking', icon: CalendarCheck, category: language === 'AR' ? 'إجراءات' : 'Actions' },
     { id: 'facilities', label: language === 'AR' ? 'المرافق' : 'Facilities', icon: Building2, category: language === 'AR' ? 'أقسام' : 'Sections' },
     { id: 'staff', label: language === 'AR' ? 'فريق العمل' : 'Staff', icon: Briefcase, category: language === 'AR' ? 'أقسام' : 'Sections' },
+    { id: 'profile', label: language === 'AR' ? 'الملف الشخصي' : 'Profile', icon: UserRound, category: language === 'AR' ? 'أقسام' : 'Sections' },
     { id: 'dashboard', label: language === 'AR' ? 'الرئيسية' : 'Dashboard', icon: Home, category: language === 'AR' ? 'أقسام' : 'Sections' },
   ].filter(r => {
     const tab = r.id.replace('-add', '')
-    return !permissions || permissions.length === 0 || permissions.includes(tab)
+    return tab === 'profile' || !permissions || permissions.length === 0 || permissions.includes(tab)
   }), [language, permissions])
 
   const filteredResults = useMemo(() => {
@@ -176,15 +177,19 @@ function Header({ language, setLanguage, notifications, showNotifications, setSh
           <LogOut className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <button
+          onClick={() => setActiveTab('profile')}
+          className="flex items-center gap-2 sm:gap-3 rounded-lg transition-colors hover:bg-slate-50 p-1.5"
+          title={language === 'AR' ? 'الملف الشخصي' : 'Profile'}
+        >
           <div className={`hidden sm:block ${language === 'AR' ? 'text-right' : 'text-left'}`}>
             <p className="text-sm font-semibold text-slate-700">{userName || 'Admin'}</p>
-            <p className="text-xs text-slate-400">{language === 'AR' ? 'مدير النظام' : 'Admin'}</p>
+            <p className="text-xs text-slate-400">{permissions && permissions.length > 1 ? (language === 'AR' ? 'مدير النظام' : 'System Admin') : (language === 'AR' ? 'موظف' : 'Staff Member')}</p>
           </div>
           <div className="w-8 h-8 md:w-9 md:h-9 bg-primary-100 rounded-full flex items-center justify-center border-2 border-primary-200">
             <span className="text-primary-700 font-bold text-xs md:text-sm">{userName ? userName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) : 'AD'}</span>
           </div>
-        </div>
+        </button>
       </div>
     </header>
   )
