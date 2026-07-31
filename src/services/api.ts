@@ -195,17 +195,40 @@ export interface ComplaintModel {
 
 export interface PaymentModel {
   id?: string;
+  tenantId?: string;
   tenantName?: string;
   fullName?: string;
   villaNumber?: string;
   houseNumber?: string;
   amount?: number;
-  month?: string;
+  month?: string | number;
   year?: number;
   status?: string;
   paymentDate?: string;
   createdAt?: string;
   paymentMethod?: string;
+}
+
+export interface ExpenseModel {
+  id?: string;
+  description: string;
+  category?: string;
+  amount: number;
+  paymentMethod?: string;
+  date?: string;
+  notes?: string;
+  createdAt?: string;
+}
+
+export interface CompanyModel {
+  id?: string;
+  companyName: string;
+  contactPerson?: string;
+  specialization?: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+  createdAt?: string;
 }
 
 export interface MaintenanceReport {
@@ -535,15 +558,41 @@ export const api = {
 
   // Payments API
   async getPayments(): Promise<PaymentModel[]> {
-    return request<PaymentModel[]>('GET', '/api/Payments').catch(() => []);
+    return request<PaymentModel[]>('GET', '/api/Payment').catch(() => []);
   },
 
   async createPayment(payment: PaymentModel): Promise<PaymentModel> {
-    return request<PaymentModel>('POST', '/api/Payments', payment);
+    return request<PaymentModel>('POST', '/api/Payment', payment);
   },
 
   async updatePaymentStatus(id: string, statusData: { status: string }): Promise<any> {
-    return request<any>('PUT', `/api/Payments/${id}/status`, statusData);
+    return request<any>('PUT', `/api/Payment/${id}/status`, statusData);
+  },
+
+  // Expenses API
+  async getExpenses(): Promise<ExpenseModel[]> {
+    return request<ExpenseModel[]>('GET', '/api/Expense').catch(() => []);
+  },
+
+  async createExpense(expense: ExpenseModel): Promise<ExpenseModel> {
+    return request<ExpenseModel>('POST', '/api/Expense', expense);
+  },
+
+  async updateExpense(id: string, expense: ExpenseModel): Promise<ExpenseModel> {
+    return request<ExpenseModel>('PUT', `/api/Expense/${id}`, expense);
+  },
+
+  async deleteExpense(id: string): Promise<any> {
+    return request<any>('DELETE', `/api/Expense/${id}`);
+  },
+
+  // Companies API
+  async getCompanies(): Promise<CompanyModel[]> {
+    return request<CompanyModel[]>('GET', '/api/Company').catch(() => []);
+  },
+
+  async createCompany(company: CompanyModel): Promise<CompanyModel> {
+    return request<CompanyModel>('POST', '/api/Company', company);
   },
 
   // Staff API

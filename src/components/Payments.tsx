@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, Eye, X, User, Home, Send, LayoutList, Grid3X3, DollarSign, Tag, FileText, Calendar, Building2, Phone, Mail, CheckCircle, XCircle } from 'lucide-react'
-import { api } from '../services/api'
+import { api, TenantModel } from '../services/api'
 import CurrencySymbol from './CurrencySymbol'
 
 interface Payment {
   id: string | number
+  tenantId?: string
   tenantName: string
   villaNumber: string
   amount: number
-  month: string
+  month: string | number
   year: number
   status: 'paid' | 'pending' | 'late' | 'cancelled'
   paymentDate?: string
@@ -78,24 +79,17 @@ const COMPANY_SPECIALIZATIONS: { ar: string; en: string }[] = [
   { ar: 'كهرباء', en: 'Electrical' },
   { ar: 'سباكة', en: 'Plumbing' },
   { ar: 'حدائق', en: 'Gardening' },
-  { ar: 'مكافحة حشرات', en: 'Pest Control' },
   { ar: 'مصاعد', en: 'Elevators' },
   { ar: 'تكييف', en: 'AC' },
-  { ar: 'مقاولات عامة', en: 'General Contracting' },
   { ar: 'أخرى', en: 'Other' },
 ]
 
 function Payments({ language }: PaymentsProps) {
   const t = (ar: string, en: string) => language === 'AR' ? ar : en
   const [payments, setPayments] = useState<Payment[]>([])
-  const [expenses, setExpenses] = useState<Expense[]>(() => {
-    const stored = localStorage.getItem('azhar_expenses')
-    return stored ? JSON.parse(stored) : []
-  })
-  const [companies, setCompanies] = useState<Company[]>(() => {
-    const stored = localStorage.getItem('azhar_companies')
-    return stored ? JSON.parse(stored) : []
-  })
+  const [expenses, setExpenses] = useState<Expense[]>([])
+  const [companies, setCompanies] = useState<Company[]>([])
+  const [tenants, setTenants] = useState<TenantModel[]>([])
   const [companyContracts, setCompanyContracts] = useState<CompanyContract[]>(() => {
     const stored = localStorage.getItem('azhar_company_contracts')
     return stored ? JSON.parse(stored) : []
@@ -131,41 +125,76 @@ function Payments({ language }: PaymentsProps) {
   const [editingContract, setEditingContract] = useState<CompanyContract | null>(null)
   const [contractFormData, setContractFormData] = useState<Partial<CompanyContract>>({})
 
-  // localStorage sync
-  useEffect(() => {
-    localStorage.setItem('azhar_expenses', JSON.stringify(expenses))
-  }, [expenses])
-
-  useEffect(() => {
-    localStorage.setItem('azhar_companies', JSON.stringify(companies))
-  }, [companies])
-
+  // localStorage sync (contracts only — expenses/companies come from API)
   useEffect(() => {
     localStorage.setItem('azhar_company_contracts', JSON.stringify(companyContracts))
   }, [companyContracts])
 
   const mapToFrontend = (item: any): Payment => ({
     id: item.id || String(Date.now()),
+    tenantId: item.tenantId || undefined,
     tenantName: item.tenantName || item.fullName || '',
-    villaNumber: item.villaNumber || item.houseNumber || '',
+    villaNumber: item.unitNumber || item.villaNumber || item.houseNumber || '',
     amount: Number(item.amount) || 0,
-    month: item.month || t('يناير', 'Jan'),
+    month: item.month ?? '',
     year: Number(item.year) || 2026,
     status: item.status?.toLowerCase() === 'paid' ? 'paid' : item.status?.toLowerCase() === 'late' ? 'late' : item.status?.toLowerCase() === 'cancelled' ? 'cancelled' : 'pending',
     paymentDate: item.paymentDate ? item.paymentDate.split('T')[0] : undefined,
-    paymentMethod: item.paymentMethod || 'cash'
+    paymentMethod: item.paymentMethod === 'Card' ? 'card' : item.paymentMethod === 'Cash' ? 'cash' : (item.paymentMethod || 'cash')
+  })
+
+  const mapExpenseToFrontend = (item: any): Expense => ({
+    id: item.id,
+    description: item.description || '',
+    amount: Number(item.amount) || 0,
+    category: item.category || '',
+    date: item.date ? item.date.split('T')[0] : '',
+    paymentMethod: item.paymentMethod === 'Card' ? 'card' : 'cash',
+    notes: item.notes || '',
+  })
+
+  const mapCompanyToFrontend = (item: any): Company => ({
+    id: item.id,
+    name: item.companyName || '',
+    specialization: item.specialization || '',
+    contactPerson: item.contactPerson || '',
+    phone: item.phone || '',
+    email: item.email || '',
+    notes: item.notes || '',
+    createdAt: item.createdAt ? item.createdAt.split('T')[0] : '',
   })
 
   const mapToBackend = (payment: Partial<Payment>): any => ({
-    tenantName: payment.tenantName || '',
-    villaNumber: payment.villaNumber || '',
+    tenantId: payment.tenantId || '',
     amount: Number(payment.amount) || 0,
-    month: payment.month || '',
+    month: Number(payment.month) || 0,
     year: Number(payment.year) || 2026,
-    status: payment.status || 'pending',
+    status: payment.status === 'paid' ? 'Paid' : payment.status === 'late' ? 'Late' : payment.status === 'cancelled' ? 'Cancelled' : 'Pending',
     paymentDate: payment.paymentDate ? new Date(payment.paymentDate).toISOString() : new Date().toISOString(),
-    paymentMethod: payment.paymentMethod || 'cash'
+    paymentMethod: payment.paymentMethod === 'card' ? 'Card' : payment.paymentMethod === 'bank_transfer' ? 'Card' : 'Cash'
   })
+
+  const fetchExpenses = async () => {
+    try {
+      const data = await api.getExpenses()
+      if (Array.isArray(data)) setExpenses(data.map(mapExpenseToFrontend))
+    } catch { setExpenses([]) }
+  }
+
+  const fetchCompanies = async () => {
+    try {
+      const data = await api.getCompanies()
+      if (Array.isArray(data)) setCompanies(data.map(mapCompanyToFrontend))
+    } catch { setCompanies([]) }
+  }
+
+  const fetchTenants = async () => {
+    try {
+      const data = await api.getTenants()
+      const list: TenantModel[] = Array.isArray(data) ? data : (data as any)?.tenants ?? []
+      setTenants(list)
+    } catch { setTenants([]) }
+  }
 
   const fetchPayments = async () => {
     setLoading(true)
@@ -188,12 +217,15 @@ function Payments({ language }: PaymentsProps) {
 
   useEffect(() => {
     fetchPayments()
+    fetchExpenses()
+    fetchCompanies()
+    fetchTenants()
   }, [])
 
   // Payment CRUD
   const handleAddPayment = () => {
     setEditingPayment(null)
-    setPaymentFormData({ tenantName: '', villaNumber: '', amount: 0, month: '', year: 2026, status: 'pending', paymentMethod: 'cash' })
+    setPaymentFormData({ tenantId: '', tenantName: '', villaNumber: '', amount: 0, month: '', year: 2026, status: 'pending', paymentMethod: 'cash' })
     setShowPaymentModal(true)
   }
 
@@ -238,8 +270,6 @@ function Payments({ language }: PaymentsProps) {
   }
 
   // Expense CRUD
-  const getNextExpenseId = () => `EXP-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
-
   const handleAddExpense = () => {
     setEditingExpense(null)
     setExpenseFormData({
@@ -260,28 +290,45 @@ function Payments({ language }: PaymentsProps) {
     setShowExpenseView(true)
   }
 
-  const handleDeleteExpense = (id: string) => {
+  const handleDeleteExpense = async (id: string) => {
     if (window.confirm(t('هل أنت متأكد من حذف هذا المصروف؟', 'Are you sure you want to delete this expense?'))) {
-      setExpenses(expenses.filter(e => e.id !== id))
+      try {
+        await api.deleteExpense(id)
+        setExpenses(expenses.filter(e => e.id !== id))
+      } catch (err: any) {
+        alert(t('خطأ: ', 'Error: ') + err.message)
+      }
     }
   }
 
-  const handleSaveExpense = () => {
+  const handleSaveExpense = async () => {
     if (!expenseFormData.description || !expenseFormData.amount) {
       alert(t('يرجى إدخال الوصف والمبلغ', 'Please enter description and amount'))
       return
     }
-    if (editingExpense) {
-      setExpenses(expenses.map(e => e.id === editingExpense.id ? { ...e, ...expenseFormData } as Expense : e))
-    } else {
-      setExpenses([{ ...expenseFormData as Expense, id: getNextExpenseId() } as Expense, ...expenses])
+    const payload: any = {
+      description: expenseFormData.description,
+      category: expenseFormData.category || 'Other',
+      amount: Number(expenseFormData.amount),
+      paymentMethod: expenseFormData.paymentMethod === 'card' ? 'Card' : 'Cash',
+      date: expenseFormData.date ? new Date(expenseFormData.date).toISOString() : new Date().toISOString(),
+      notes: expenseFormData.notes || '',
     }
-    setShowExpenseModal(false)
+    try {
+      if (editingExpense) {
+        const updated = await api.updateExpense(String(editingExpense.id), payload)
+        setExpenses(expenses.map(e => e.id === editingExpense.id ? { ...e, ...mapExpenseToFrontend(updated), id: editingExpense.id } : e))
+      } else {
+        const created = await api.createExpense(payload)
+        setExpenses([mapExpenseToFrontend(created), ...expenses])
+      }
+      setShowExpenseModal(false)
+    } catch (err: any) {
+      alert(t('خطأ: ', 'Error: ') + err.message)
+    }
   }
 
   // Company CRUD
-  const getNextCompanyId = () => `CMP-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
-
   const handleAddCompany = () => {
     setEditingCompany(null)
     setCompanyFormData({ name: '', specialization: COMPANY_SPECIALIZATIONS[0].en, contactPerson: '', phone: '', email: '', notes: '', createdAt: new Date().toISOString().split('T')[0] })
@@ -306,17 +353,30 @@ function Payments({ language }: PaymentsProps) {
     }
   }
 
-  const handleSaveCompany = () => {
+  const handleSaveCompany = async () => {
     if (!companyFormData.name) {
       alert(t('يرجى إدخال اسم الشركة', 'Please enter company name'))
       return
     }
-    if (editingCompany) {
-      setCompanies(companies.map(c => c.id === editingCompany.id ? { ...c, ...companyFormData } as Company : c))
-    } else {
-      setCompanies([{ ...companyFormData as Company, id: getNextCompanyId() } as Company, ...companies])
+    const payload: any = {
+      companyName: companyFormData.name,
+      contactPerson: companyFormData.contactPerson || '',
+      specialization: companyFormData.specialization || 'Other',
+      email: companyFormData.email || '',
+      phone: companyFormData.phone || '',
+      notes: companyFormData.notes || '',
     }
-    setShowCompanyModal(false)
+    try {
+      if (editingCompany) {
+        setCompanies(companies.map(c => c.id === editingCompany.id ? { ...c, ...companyFormData } as Company : c))
+      } else {
+        const created = await api.createCompany(payload)
+        setCompanies([mapCompanyToFrontend(created), ...companies])
+      }
+      setShowCompanyModal(false)
+    } catch (err: any) {
+      alert(t('خطأ: ', 'Error: ') + err.message)
+    }
   }
 
   const getCompanyName = (id: string) => companies.find(c => c.id === id)?.name || id
@@ -717,33 +777,49 @@ function Payments({ language }: PaymentsProps) {
               <button onClick={() => setShowPaymentModal(false)} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
             </div>
             <div className="space-y-4">
-              <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('اسم المستأجر', 'Tenant Name')}</label><input type="text" value={paymentFormData.tenantName || ''} onChange={e => setPaymentFormData({ ...paymentFormData, tenantName: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" /></div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('المستأجر', 'Tenant')}</label>
+                <select
+                  value={paymentFormData.tenantId || ''}
+                  onChange={e => {
+                    const tenant = tenants.find(tn => tn.id === e.target.value)
+                    setPaymentFormData({
+                      ...paymentFormData,
+                      tenantId: e.target.value,
+                      tenantName: tenant?.fullName || '',
+                      villaNumber: tenant?.houseNumber || '',
+                    })
+                  }}
+                  className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm"
+                >
+                  <option value="">{t('اختر المستأجر...', 'Select tenant...')}</option>
+                  {tenants.map(tn => (
+                    <option key={tn.id} value={tn.id}>{tn.fullName} — {tn.houseNumber}</option>
+                  ))}
+                </select>
+              </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('رقم الوحدة', 'Unit Number')}</label><input type="text" value={paymentFormData.villaNumber || ''} onChange={e => setPaymentFormData({ ...paymentFormData, villaNumber: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" /></div>
                 <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('المبلغ', 'Amount')}</label><input type="number" value={paymentFormData.amount || ''} onChange={e => setPaymentFormData({ ...paymentFormData, amount: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" /></div>
+                <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('الشهر', 'Month')}</label><input type="number" min={1} max={12} value={paymentFormData.month || ''} onChange={e => setPaymentFormData({ ...paymentFormData, month: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" placeholder="1-12" /></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('الشهر', 'Month')}</label><input type="text" value={paymentFormData.month || ''} onChange={e => setPaymentFormData({ ...paymentFormData, month: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" /></div>
                 <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('السنة', 'Year')}</label><input type="number" value={paymentFormData.year || ''} onChange={e => setPaymentFormData({ ...paymentFormData, year: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
                 <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('الحالة', 'Status')}</label>
                   <select value={paymentFormData.status || 'pending'} onChange={e => setPaymentFormData({ ...paymentFormData, status: e.target.value as any })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
-                    <option value="paid">{t('مدفوع', 'Paid')}</option>
                     <option value="pending">{t('معلق', 'Pending')}</option>
-                    <option value="late">{t('متأخر', 'Late')}</option>
-                    <option value="cancelled">{t('ملغى', 'Cancelled')}</option>
+                    <option value="paid">{t('مدفوع', 'Paid')}</option>
                   </select>
                 </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('طريقة الدفع', 'Payment Method')}</label>
                   <select value={paymentFormData.paymentMethod || 'cash'} onChange={e => setPaymentFormData({ ...paymentFormData, paymentMethod: e.target.value as any })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm">
                     <option value="cash">{t('نقدي', 'Cash')}</option>
-                    <option value="bank_transfer">{t('تحويل بنكي', 'Bank Transfer')}</option>
                     <option value="card">{t('بطاقة', 'Card')}</option>
                   </select>
                 </div>
+                <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('تاريخ الدفع', 'Payment Date')}</label><input type="date" value={paymentFormData.paymentDate || ''} onChange={e => setPaymentFormData({ ...paymentFormData, paymentDate: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" /></div>
               </div>
-              <div><label className="block text-sm font-medium text-slate-700 mb-1">{t('تاريخ الدفع', 'Payment Date')}</label><input type="date" value={paymentFormData.paymentDate || ''} onChange={e => setPaymentFormData({ ...paymentFormData, paymentDate: e.target.value })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" /></div>
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={handleSavePayment} className="flex-1 h-10 bg-primary-600 text-white rounded-xl hover:bg-primary-700">{t('حفظ', 'Save')}</button>
