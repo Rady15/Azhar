@@ -105,6 +105,19 @@ function App() {
     }
   }
 
+  useEffect(() => {
+    if (!isLoggedIn) return
+    api.getProfile()
+      .then((p: any) => {
+        const name = p?.displayName || p?.fullName
+        if (name) {
+          localStorage.setItem('azhar_name', name)
+          setUserName(name)
+        }
+      })
+      .catch(() => {})
+  }, [isLoggedIn])
+
   const handleLogout = () => {
     setIsLoggedIn(false)
     setActiveTab('dashboard')

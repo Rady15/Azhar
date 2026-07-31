@@ -172,7 +172,7 @@ export default function Dashboard({ language, userName }: DashboardProps) {
   const dateStr = language === 'AR'
     ? `${today.getDate()} ${MONTHS_AR[today.getMonth()]} ${today.getFullYear()}`
     : `${MONTHS_EN[today.getMonth()]} ${today.getDate()}, ${today.getFullYear()}`
-  const storedName = localStorage.getItem('azhar_name') || localStorage.getItem('azhar_email') || userName || 'Admin'
+  const storedName = localStorage.getItem('azhar_name') || userName || localStorage.getItem('azhar_email') || 'Admin'
 
   return (
     <div className="space-y-6">
