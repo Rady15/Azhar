@@ -53,15 +53,46 @@ function Reports({ language }: ReportsProps) {
     setLoading(true)
     setError(null)
     try {
-      const [financial, maintenance] = await Promise.allSettled([
+      const [financial, maintenance, dashboard] = await Promise.allSettled([
         api.getFinancialReport(),
         api.getMaintenanceReport(),
+        api.getDashboardStats(),
       ])
       const fin = financial.status === 'fulfilled' ? financial.value : null
       const maint = maintenance.status === 'fulfilled' ? maintenance.value : null
+      const dash = dashboard.status === 'fulfilled' ? dashboard.value : null
+
+      const mergedMaintenance = { ...stats.maintenance }
+      if (maint) {
+        mergedMaintenance.totalCost = maint.totalCost ?? mergedMaintenance.totalCost
+        mergedMaintenance.averageCost = maint.averageCost ?? mergedMaintenance.averageCost
+        mergedMaintenance.total = maint.totalRequests ?? maint.total ?? mergedMaintenance.total
+        mergedMaintenance.pending = maint.pendingRequests ?? maint.pending ?? mergedMaintenance.pending
+        mergedMaintenance.inProgress = maint.inProgressRequests ?? maint.inProgress ?? mergedMaintenance.inProgress
+        mergedMaintenance.completed = maint.completedRequests ?? maint.completed ?? mergedMaintenance.completed
+      }
+      if (dash) {
+        mergedMaintenance.total = dash.totalMaintenanceRequests ?? mergedMaintenance.total
+        mergedMaintenance.pending = dash.openRequests ?? mergedMaintenance.pending
+        mergedMaintenance.inProgress = dash.inProgressRequests ?? mergedMaintenance.inProgress
+        mergedMaintenance.completed = dash.completedRequests ?? mergedMaintenance.completed
+      }
 
       setStats(prev => ({
         ...prev,
+        ...(dash ? {
+          tenants: {
+            total: dash.totalTenants ?? prev.tenants.total,
+            active: dash.activeTenants ?? prev.tenants.active,
+            inactive: dash.inactiveTenants ?? prev.tenants.inactive,
+          },
+          villas: {
+            total: dash.totalHouses ?? prev.villas.total,
+            available: dash.availableHouses ?? prev.villas.available,
+            occupied: dash.occupiedHouses ?? prev.villas.occupied,
+            maintenance: dash.housesWithMaintenance ?? prev.villas.maintenance,
+          },
+        } : {}),
         ...(fin ? {
           payments: {
             total: fin.totalPayments ?? fin.totalAmount ?? prev.payments.total,
@@ -74,30 +105,10 @@ function Reports({ language }: ReportsProps) {
             yearly: fin.yearlyRevenue ?? fin.yearly ?? prev.revenue.yearly,
             growth: fin.growth ?? fin.revenueGrowth ?? prev.revenue.growth,
           },
-          tenants: {
-            total: fin.totalTenants ?? prev.tenants.total,
-            active: fin.activeTenants ?? prev.tenants.active,
-            inactive: fin.inactiveTenants ?? prev.tenants.inactive,
-          },
-          villas: {
-            total: fin.totalVillas ?? prev.villas.total,
-            available: fin.availableVillas ?? prev.villas.available,
-            occupied: fin.occupiedVillas ?? prev.villas.occupied,
-            maintenance: fin.maintenanceVillas ?? prev.villas.maintenance,
-          },
         } : {}),
-        ...(maint ? {
-          maintenance: {
-            total: maint.totalRequests ?? maint.total ?? prev.maintenance.total,
-            pending: maint.pendingRequests ?? maint.pending ?? prev.maintenance.pending,
-            inProgress: maint.inProgressRequests ?? maint.inProgress ?? prev.maintenance.inProgress,
-            completed: maint.completedRequests ?? maint.completed ?? prev.maintenance.completed,
-            totalCost: maint.totalCost ?? prev.maintenance.totalCost,
-            averageCost: maint.averageCost ?? prev.maintenance.averageCost,
-          },
-        } : {}),
+        maintenance: mergedMaintenance,
       }))
-      if (financial.status === 'rejected' && maintenance.status === 'rejected') {
+      if (financial.status === 'rejected' && maintenance.status === 'rejected' && dashboard.status === 'rejected') {
         setError(t('تعذر تحميل البيانات — عرض بيانات تجريبية', 'Could not load data — showing sample data'))
       }
     } catch (err: any) {

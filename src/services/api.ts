@@ -159,6 +159,30 @@ export interface DashboardStats {
   MonthlyRevenue?: number;
   yearlyRevenue?: number;
   YearlyRevenue?: number;
+  inactiveTenants?: number;
+  InactiveTenants?: number;
+  totalMaintenanceRequests?: number;
+  TotalMaintenanceRequests?: number;
+  openRequests?: number;
+  OpenRequests?: number;
+  inProgressRequests?: number;
+  InProgressRequests?: number;
+  completedRequests?: number;
+  CompletedRequests?: number;
+  cancelledRequests?: number;
+  CancelledRequests?: number;
+  occupiedHouses?: number;
+  OccupiedHouses?: number;
+  availableHouses?: number;
+  AvailableHouses?: number;
+  housesWithMaintenance?: number;
+  HousesWithMaintenance?: number;
+  totalBookings?: number;
+  TotalBookings?: number;
+  pendingBookings?: number;
+  PendingBookings?: number;
+  confirmedBookings?: number;
+  ConfirmedBookings?: number;
 }
 
 export interface AnnouncementModel {
