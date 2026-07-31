@@ -20,8 +20,9 @@ function Login({ onLogin }: LoginProps) {
 
     try {
       const result = await api.loginAdmin({ email: username, password })
-      if (result.fullName) {
-        localStorage.setItem('azhar_name', result.fullName)
+      const loginName = result.displayName || result.fullName
+      if (loginName) {
+        localStorage.setItem('azhar_name', loginName)
       }
       const isAdmin = username === 'admin@azhar.com'
       const staffPerms = ['my-tasks']
