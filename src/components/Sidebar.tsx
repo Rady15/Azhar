@@ -58,7 +58,7 @@ const navItems: { icon: typeof LayoutDashboard; tab: TabType }[] = [
 
 function Sidebar({ activeTab, setActiveTab, language, userName, permissions, sidebarOpen, setSidebarOpen }: SidebarProps) {
   const getLabel = (tab: TabType) => tabLabels[tab][language]
-  const visibleNavItems = navItems.filter(item => permissions.includes(item.tab))
+  const visibleNavItems = navItems.filter(item => permissions.includes(item.tab) && !(item.tab === 'my-tasks' && permissions.length > 1))
   const isAdmin = permissions.length > 1
 
   const handleTabClick = (tab: TabType) => {
