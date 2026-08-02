@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, Edit, Eye, X, User, Home, Loader2, Send, Calendar, Tag, MessageSquare, CheckCircle, Upload, LayoutList, Grid3X3 } from 'lucide-react'
 import { api, API_BASE_URL } from '../services/api'
+import { useToast } from './Toast'
 
 interface Complaint {
   id: string
@@ -38,6 +39,7 @@ const STATUS_STYLES: Record<string, string> = {
 }
 
 function Complaints({ language }: ComplaintsProps) {
+  const { showToast } = useToast()
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -196,9 +198,10 @@ function Complaints({ language }: ComplaintsProps) {
         setComplaints([newComplaint, ...complaints])
       }
       setShowModal(false)
+      showToast('success', language === 'AR' ? 'تم حفظ الشكوى بنجاح' : 'Complaint saved successfully')
     } catch (err: any) {
       console.error('Save complaint error:', err)
-      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+      showToast('error', language === 'AR' ? `تعذر حفظ الشكوى: ${err.message}` : `Could not save complaint: ${err.message}`)
     } finally {
       setSaving(false)
     }
@@ -217,9 +220,10 @@ function Complaints({ language }: ComplaintsProps) {
       const updated = { ...viewingComplaint, reply: replyText, adminReply: replyText, status: replyStatus }
       setViewingComplaint(updated)
       setComplaints(complaints.map(c => c.id === updated.id ? updated : c))
+      showToast('success', language === 'AR' ? 'تم إرسال الرد بنجاح' : 'Reply sent successfully')
     } catch (err: any) {
       console.error('Reply error:', err)
-      alert(language === 'AR' ? `فشل إرسال الرد: ${err.message}` : `Reply failed: ${err.message}`)
+      showToast('error', language === 'AR' ? `تعذر إرسال الرد: ${err.message}` : `Could not send reply: ${err.message}`)
     } finally {
       setSendingReply(false)
     }

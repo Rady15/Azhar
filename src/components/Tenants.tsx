@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Plus, Edit, Trash2, Eye, X, User, Phone, Home, Calendar, Loader2, Hash, Flag, DollarSign, CreditCard, FileText, LayoutList, Grid3X3, Camera, FileUp, Droplets, Zap } from 'lucide-react'
 import { api } from '../services/api'
 import CurrencySymbol from './CurrencySymbol'
+import { useToast } from './Toast'
 
 interface Tenant {
   id: string | number
@@ -40,6 +41,7 @@ interface TenantsProps {
 const isImageUrl = (url: string) => /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(url)
 
 function Tenants({ language }: TenantsProps) {
+  const { showToast } = useToast()
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -198,7 +200,7 @@ function Tenants({ language }: TenantsProps) {
         setTenants(tenants.filter(t => t.id !== id))
       } catch (err: any) {
         console.error('Delete tenant error:', err)
-        alert(language === 'AR' ? `فشل الحذف: ${err.message}` : `Delete failed: ${err.message}`)
+        showToast('error', language === 'AR' ? `تعذر حذف المستأجر: ${err.message}` : `Could not delete tenant: ${err.message}`)
         setTenants(tenants.filter(t => t.id !== id))
       }
     }
@@ -236,9 +238,10 @@ function Tenants({ language }: TenantsProps) {
         setTenants([...tenants, newTenant])
       }
       setShowModal(false)
+      showToast('success', language === 'AR' ? 'تم حفظ المستأجر بنجاح' : 'Tenant saved successfully')
     } catch (err: any) {
       console.error('Save tenant error:', err)
-      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+      showToast('error', language === 'AR' ? `تعذر حفظ المستأجر: ${err.message}` : `Could not save tenant: ${err.message}`)
     }
   }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, Eye, X, Send, LayoutList, Grid3X3, Mail, Users, User, Calendar, Clock, CheckCircle, Loader2 } from 'lucide-react'
 import { api } from '../services/api'
+import { useToast } from './Toast'
 
 interface Tenant {
   id: string
@@ -27,6 +28,7 @@ interface AdsProps {
 
 function Ads({ language }: AdsProps) {
   const t = (ar: string, en: string) => language === 'AR' ? ar : en
+  const { showToast } = useToast()
   const [letters, setLetters] = useState<Letter[]>(() => {
     const stored = localStorage.getItem('azhar_letters')
     return stored ? JSON.parse(stored) : []
@@ -124,9 +126,10 @@ function Ads({ language }: AdsProps) {
         recipientId: letter.recipientType === 'specific' ? letter.recipientId : undefined,
       })
       setLetters(letters.map(l => l.id === id ? { ...l, status: 'sent' as const, sentDate: new Date().toISOString().split('T')[0] } : l))
+      showToast('success', t('تم إرسال الخطاب بنجاح', 'Letter sent successfully'))
     } catch (err: any) {
       console.error('Send letter error:', err)
-      alert(t('فشل إرسال الخطاب', 'Failed to send letter'))
+      showToast('error', t('تعذر إرسال الخطاب', 'Could not send letter'))
     }
     setSaving(false)
   }
@@ -134,11 +137,11 @@ function Ads({ language }: AdsProps) {
   const handleSave = async () => {
     if (saving) return
     if (!formData.title || !formData.content) {
-      alert(t('يرجى إدخال عنوان الخطاب والمحتوى', 'Please enter letter title and content'))
+      showToast('warning', t('يرجى إدخال عنوان الخطاب والمحتوى', 'Please enter letter title and content'))
       return
     }
     if (formData.recipientType === 'specific' && !formData.recipientId) {
-      alert(t('يرجى اختيار المستلم', 'Please select a recipient'))
+      showToast('warning', t('يرجى اختيار المستلم', 'Please select a recipient'))
       return
     }
 
@@ -157,7 +160,7 @@ function Ads({ language }: AdsProps) {
       })
     } catch (err: any) {
       console.error('Send letter error:', err)
-      alert(t('فشل إرسال الخطاب', 'Failed to send letter'))
+      showToast('error', t('تعذر إرسال الخطاب', 'Could not send letter'))
       setSaving(false)
       return
     }
@@ -174,6 +177,7 @@ function Ads({ language }: AdsProps) {
     }, ...letters])
     setShowModal(false)
     setSaving(false)
+    showToast('success', t('تم إرسال الخطاب بنجاح', 'Letter sent successfully'))
   }
 
   const draftCount = letters.filter(l => l.status === 'draft').length

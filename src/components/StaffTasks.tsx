@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ClipboardList, CheckCircle, X, Play, Loader2, RefreshCw, Wrench, AlertCircle } from 'lucide-react'
 import { api } from '../services/api'
+import { useToast } from './Toast'
 
 interface StaffTaskModel {
   id: string
@@ -43,6 +44,7 @@ const statusColors: Record<string, string> = {
 }
 
 export default function StaffTasks({ language }: StaffTasksProps) {
+  const { showToast } = useToast()
   const [tasks, setTasks] = useState<StaffTaskModel[]>([])
   const [loading, setLoading] = useState(true)
   const [updatingTask, setUpdatingTask] = useState<string | null>(null)
@@ -71,8 +73,9 @@ export default function StaffTasks({ language }: StaffTasksProps) {
       await api.updateMaintenanceStatus(requestId, { Status: newStatus })
       const statusMap = ['Submitted', 'Assigned', 'InProgress', 'Completed', 'Cancelled']
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: statusMap[newStatus] } : t))
+      showToast('success', t('تم تحديث حالة المهمة بنجاح', 'Task status updated successfully'))
     } catch (err: any) {
-      alert(err.message || t('فشل التحديث', 'Update failed'))
+      showToast('error', err.message || t('تعذر التحديث', 'Update failed'))
     } finally {
       setUpdatingTask(null)
     }

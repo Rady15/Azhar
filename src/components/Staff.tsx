@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Plus, Edit, Trash2, Eye, X, Users, Phone, Loader2, Check, BadgeCheck, BadgeX, Upload, ClipboardList, CheckCircle, LayoutList, Grid3X3, ShieldCheck, Play } from 'lucide-react'
 import { api, API_BASE_URL, StaffModel, MaintenanceModel } from '../services/api'
+import { useToast } from './Toast'
 
 const ALL_PERMISSIONS: { key: string; labelAr: string; labelEn: string }[] = [
   { key: 'dashboard', labelAr: 'الرئيسية', labelEn: 'Dashboard' },
@@ -22,6 +23,7 @@ interface StaffProps {
 }
 
 export default function Staff({ language }: StaffProps) {
+  const { showToast } = useToast()
   const [staff, setStaff] = useState<StaffModel[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -131,8 +133,9 @@ export default function Staff({ language }: StaffProps) {
         }
         return t
       }))
+      showToast('success', language === 'AR' ? 'تم تحديث حالة المهمة بنجاح' : 'Task status updated successfully')
     } catch (err: any) {
-      alert(err.message || 'Failed to update task')
+      showToast('error', err.message || (language === 'AR' ? 'تعذر تحديث المهمة' : 'Failed to update task'))
     } finally {
       setUpdatingTask(null)
     }
@@ -143,9 +146,10 @@ export default function Staff({ language }: StaffProps) {
     try {
       await api.deleteStaff(id)
       setStaff(prev => prev.filter(m => m.id !== id))
+      showToast('success', language === 'AR' ? 'تم حذف العضو بنجاح' : 'Staff member deleted successfully')
     } catch (err: any) {
       console.error('Delete staff error:', err)
-      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+      showToast('error', language === 'AR' ? `تعذر حذف العضو: ${err.message}` : `Could not delete staff member: ${err.message}`)
     }
   }
 
@@ -185,9 +189,10 @@ export default function Staff({ language }: StaffProps) {
 
       setShowModal(false)
       setEditingStaff(null)
+      showToast('success', language === 'AR' ? 'تم حفظ العضو بنجاح' : 'Staff member saved successfully')
     } catch (err: any) {
       console.error('Save staff error:', err)
-      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+      showToast('error', language === 'AR' ? `تعذر حفظ العضو: ${err.message}` : `Could not save staff member: ${err.message}`)
     } finally {
       setSaving(false)
     }

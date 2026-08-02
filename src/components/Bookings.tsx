@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, Eye, X, CalendarCheck, Users, Clock, CheckCircle, Loader2, LayoutList, Grid3X3 } from 'lucide-react'
 import { api, BookingModel, FacilityModel } from '../services/api'
+import { useToast } from './Toast'
 
 interface BookingsProps {
   language: 'AR' | 'EN'
@@ -19,6 +20,7 @@ const STATUS_STYLES: Record<string, string> = {
 }
 
 function Bookings({ language }: BookingsProps) {
+  const { showToast } = useToast()
   const [bookings, setBookings] = useState<BookingModel[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -114,9 +116,10 @@ function Bookings({ language }: BookingsProps) {
     try {
       await api.cancelBooking(id)
       setBookings(prev => prev.filter(b => b.id !== id))
+      showToast('success', language === 'AR' ? 'تم إلغاء الحجز بنجاح' : 'Booking cancelled successfully')
     } catch (err: any) {
       console.error('Cancel booking error:', err)
-      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+      showToast('error', language === 'AR' ? `تعذر إلغاء الحجز: ${err.message}` : `Could not cancel booking: ${err.message}`)
     }
   }
 
@@ -138,9 +141,10 @@ function Bookings({ language }: BookingsProps) {
       }
       setShowModal(false)
       setEditingBooking(null)
+      showToast('success', language === 'AR' ? 'تم حفظ الحجز بنجاح' : 'Booking saved successfully')
     } catch (err: any) {
       console.error('Save booking error:', err)
-      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+      showToast('error', language === 'AR' ? `تعذر حفظ الحجز: ${err.message}` : `Could not save booking: ${err.message}`)
     } finally {
       setSaving(false)
     }

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Plus, Edit, Trash2, Eye, X, Home, Maximize, Bed, Bath, Upload, Loader2, Building, Hash, Check, Square, Clock, LayoutList, Grid3X3, User } from 'lucide-react'
 import { api, HouseModel, API_BASE_URL } from '../services/api'
+import { useToast } from './Toast'
 
 interface Villa {
   id: string | number
@@ -31,6 +32,7 @@ interface VillasProps {
 }
 
 function Villas({ language }: VillasProps) {
+  const { showToast } = useToast()
   const [villas, setVillas] = useState<Villa[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -153,9 +155,10 @@ function Villas({ language }: VillasProps) {
       try {
         await api.deleteVilla(String(id))
         setVillas(villas.filter(v => v.id !== id))
+        showToast('success', language === 'AR' ? 'تم حذف الفيلا بنجاح' : 'Villa deleted successfully')
       } catch (err: any) {
         console.error('Delete villa error:', err)
-        alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+        showToast('error', language === 'AR' ? `تعذر حذف الفيلا: ${err.message}` : `Could not delete villa: ${err.message}`)
       }
     }
   }
@@ -173,9 +176,10 @@ function Villas({ language }: VillasProps) {
         setVillas([...villas, newVilla])
       }
       setShowModal(false)
+      showToast('success', language === 'AR' ? 'تم حفظ الفيلا بنجاح' : 'Villa saved successfully')
     } catch (err: any) {
       console.error('Save villa error:', err)
-      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+      showToast('error', language === 'AR' ? `تعذر حفظ الفيلا: ${err.message}` : `Could not save villa: ${err.message}`)
     } finally {
       setSaving(false)
     }

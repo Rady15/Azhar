@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Plus, Trash2, Edit, Eye, Loader2, Check, X, Building2, Upload, Image as ImageIcon, LayoutList, Grid3X3 } from 'lucide-react'
 import { api, API_BASE_URL, FacilityModel } from '../services/api'
+import { useToast } from './Toast'
 
 interface FacilitiesProps {
   language: 'AR' | 'EN'
@@ -11,6 +12,7 @@ interface EnrichedFacility extends FacilityModel {
 }
 
 export default function Facilities({ language }: FacilitiesProps) {
+  const { showToast } = useToast()
   const [facilities, setFacilities] = useState<EnrichedFacility[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -105,7 +107,7 @@ export default function Facilities({ language }: FacilitiesProps) {
   }
 
   const openEdit = (_facility: EnrichedFacility) => {
-    alert(language === 'AR' ? 'تعديل المرفق غير مدعوم حالياً' : 'Facility editing is not supported by the server yet')
+    showToast('warning', language === 'AR' ? 'تعديل المرفق غير مدعوم حالياً' : 'Facility editing is not supported by the server yet')
   }
 
   const handleView = (facility: EnrichedFacility) => {
@@ -119,9 +121,10 @@ export default function Facilities({ language }: FacilitiesProps) {
         const adminEmail = localStorage.getItem('azhar_email') || 'admin@azhar.com'
         await api.deleteFacility(id, { email: adminEmail })
         setFacilities(prev => prev.filter(f => f.id !== id))
+        showToast('success', language === 'AR' ? 'تم حذف المرفق بنجاح' : 'Facility deleted successfully')
       } catch (err: any) {
         console.error('Delete facility error:', err)
-        alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+        showToast('error', language === 'AR' ? `تعذر حذف المرفق: ${err.message}` : `Could not delete facility: ${err.message}`)
       }
     }
   }
@@ -153,9 +156,10 @@ export default function Facilities({ language }: FacilitiesProps) {
       setFormData({ name: '', description: '', maxCapacity: 15, isAvailable: true })
       setImageFile(null)
       setImagePreview('')
+      showToast('success', language === 'AR' ? 'تم حفظ المرفق بنجاح' : 'Facility saved successfully')
     } catch (err: any) {
       console.error('Save facility error:', err)
-      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+      showToast('error', language === 'AR' ? `تعذر حفظ المرفق: ${err.message}` : `Could not save facility: ${err.message}`)
     } finally {
       setSaving(false)
     }

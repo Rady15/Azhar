@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Edit, Trash2, Eye, X, User, Home, Send, LayoutList, Grid3X3, DollarSign, Tag, FileText, Calendar, Building2, Phone, Mail, CheckCircle, XCircle } from 'lucide-react'
 import { api, TenantModel } from '../services/api'
 import CurrencySymbol from './CurrencySymbol'
+import { useToast } from './Toast'
 
 interface Payment {
   id: string | number
@@ -86,6 +87,7 @@ const COMPANY_SPECIALIZATIONS: { ar: string; en: string }[] = [
 
 function Payments({ language }: PaymentsProps) {
   const t = (ar: string, en: string) => language === 'AR' ? ar : en
+  const { showToast } = useToast()
   const getDeletedPaymentIds = (): Set<string> => {
     try {
       return new Set(JSON.parse(localStorage.getItem('azhar_deleted_payments') || '[]') as string[])
@@ -271,14 +273,15 @@ function Payments({ language }: PaymentsProps) {
         setPayments([...payments, newPayment])
       }
       setShowPaymentModal(false)
+      showToast('success', t('تم حفظ الدفعة بنجاح', 'Payment saved successfully'))
     } catch (err: any) {
       console.error('Save payment error:', err)
-      alert(t('خطأ: ', 'Error: ') + err.message)
+      showToast('error', t('تعذر حفظ الدفعة: ', 'Could not save payment: ') + err.message)
     }
   }
 
   const handleSendReminder = (payment: Payment) => {
-    alert(t(`تم إرسال تذكير للدفع إلى ${payment.tenantName}`, `Payment reminder sent to ${payment.tenantName}`))
+    showToast('success', t(`تم إرسال تذكير للدفع إلى ${payment.tenantName}`, `Payment reminder sent to ${payment.tenantName}`))
   }
 
   // Expense CRUD
@@ -307,15 +310,16 @@ function Payments({ language }: PaymentsProps) {
       try {
         await api.deleteExpense(id)
         setExpenses(expenses.filter(e => e.id !== id))
+        showToast('success', t('تم حذف المصروف بنجاح', 'Expense deleted successfully'))
       } catch (err: any) {
-        alert(t('خطأ: ', 'Error: ') + err.message)
+        showToast('error', t('تعذر حذف المصروف: ', 'Could not delete expense: ') + err.message)
       }
     }
   }
 
   const handleSaveExpense = async () => {
     if (!expenseFormData.description || !expenseFormData.amount) {
-      alert(t('يرجى إدخال الوصف والمبلغ', 'Please enter description and amount'))
+      showToast('warning', t('يرجى إدخال الوصف والمبلغ', 'Please enter description and amount'))
       return
     }
     const payload: any = {
@@ -335,8 +339,10 @@ function Payments({ language }: PaymentsProps) {
         setExpenses([mapExpenseToFrontend(created), ...expenses])
       }
       setShowExpenseModal(false)
+      showToast('success', t('تم حفظ المصروف بنجاح', 'Expense saved successfully'))
     } catch (err: any) {
-      alert(t('خطأ: ', 'Error: ') + err.message)
+      console.error('Save expense error:', err)
+      showToast('error', t('تعذر حفظ المصروف: ', 'Could not save expense: ') + err.message)
     }
   }
 
@@ -367,7 +373,7 @@ function Payments({ language }: PaymentsProps) {
 
   const handleSaveCompany = async () => {
     if (!companyFormData.name) {
-      alert(t('يرجى إدخال اسم الشركة', 'Please enter company name'))
+      showToast('warning', t('يرجى إدخال اسم الشركة', 'Please enter company name'))
       return
     }
     const payload: any = {
@@ -386,8 +392,10 @@ function Payments({ language }: PaymentsProps) {
         setCompanies([mapCompanyToFrontend(created), ...companies])
       }
       setShowCompanyModal(false)
+      showToast('success', t('تم حفظ الشركة بنجاح', 'Company saved successfully'))
     } catch (err: any) {
-      alert(t('خطأ: ', 'Error: ') + err.message)
+      console.error('Save company error:', err)
+      showToast('error', t('تعذر حفظ الشركة: ', 'Could not save company: ') + err.message)
     }
   }
 
@@ -437,7 +445,7 @@ function Payments({ language }: PaymentsProps) {
 
   const handleSaveContract = () => {
     if (!contractFormData.description || !contractFormData.totalAmount) {
-      alert(t('يرجى إدخال الوصف والمبلغ الإجمالي', 'Please enter description and total amount'))
+      showToast('warning', t('يرجى إدخال الوصف والمبلغ الإجمالي', 'Please enter description and total amount'))
       return
     }
     if (editingContract) {

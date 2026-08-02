@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Plus, Edit, Eye, X, Home, Loader2, Calendar, DollarSign, Wrench, Star, Upload, Flag, UserCircle, LayoutList, Grid3X3, User } from 'lucide-react'
 import { api, MaintenanceModel, StaffModel, API_BASE_URL } from '../services/api'
 import CurrencySymbol from './CurrencySymbol'
+import { useToast } from './Toast'
 
 interface MaintenanceRequest extends MaintenanceModel {
   _priority: 'low' | 'medium' | 'high' | 'urgent'
@@ -28,6 +29,7 @@ const STATUS_STYLES: Record<string, string> = {
 }
 
 function Maintenance({ language }: MaintenanceProps) {
+  const { showToast } = useToast()
   const [requests, setRequests] = useState<MaintenanceRequest[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -169,9 +171,10 @@ function Maintenance({ language }: MaintenanceProps) {
         setRequests([...requests, newRequest])
       }
       setShowModal(false)
+      showToast('success', language === 'AR' ? 'تم حفظ طلب الصيانة بنجاح' : 'Maintenance request saved successfully')
     } catch (err: any) {
       console.error('Save maintenance error:', err)
-      alert(language === 'AR' ? `خطأ: ${err.message}` : `Error: ${err.message}`)
+      showToast('error', language === 'AR' ? `تعذر حفظ طلب الصيانة: ${err.message}` : `Could not save maintenance request: ${err.message}`)
     } finally {
       setSaving(false)
     }
