@@ -39,30 +39,6 @@ interface TenantsProps {
 
 const isImageUrl = (url: string) => /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(url)
 
-const RENT_OVERRIDE_KEY = 'azhar_tenant_rents'
-
-type RentOverride = { monthlyRent?: number; annualRent?: number; waterCost?: number }
-
-const getRentOverrides = (): Record<string, RentOverride> => {
-  try {
-    return JSON.parse(localStorage.getItem(RENT_OVERRIDE_KEY) || '{}')
-  } catch {
-    return {}
-  }
-}
-
-const setRentOverride = (id: string | number, values: RentOverride) => {
-  const overrides = getRentOverrides()
-  overrides[String(id)] = values
-  localStorage.setItem(RENT_OVERRIDE_KEY, JSON.stringify(overrides))
-}
-
-const removeRentOverride = (id: string | number) => {
-  const overrides = getRentOverrides()
-  delete overrides[String(id)]
-  localStorage.setItem(RENT_OVERRIDE_KEY, JSON.stringify(overrides))
-}
-
 function Tenants({ language }: TenantsProps) {
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(false)
@@ -161,21 +137,10 @@ function Tenants({ language }: TenantsProps) {
     setError('')
     try {
       const data = await api.getTenants()
-      const overrides = getRentOverrides()
-      const applyOverrides = (list: any[]) => list.map(t => {
-        const mapped = mapToFrontend(t)
-        const ov = overrides[String(t.id)]
-        if (ov) {
-          if (ov.monthlyRent != null) mapped.monthlyRent = ov.monthlyRent
-          if (ov.annualRent != null) mapped.annualRent = ov.annualRent
-          if (ov.waterCost != null) mapped.waterCost = ov.waterCost
-        }
-        return mapped
-      })
       if (data && Array.isArray((data as any).tenants)) {
-        setTenants(applyOverrides((data as any).tenants))
+        setTenants((data as any).tenants.map(mapToFrontend))
       } else if (Array.isArray(data)) {
-        setTenants(applyOverrides(data))
+        setTenants(data.map(mapToFrontend))
       }
     } catch (err: any) {
       console.error('Fetch tenants error:', err)
@@ -230,7 +195,6 @@ function Tenants({ language }: TenantsProps) {
 
       try {
         await api.deleteTenant(String(id), mapToBackend(target))
-        removeRentOverride(id)
         setTenants(tenants.filter(t => t.id !== id))
       } catch (err: any) {
         console.error('Delete tenant error:', err)
@@ -255,20 +219,12 @@ function Tenants({ language }: TenantsProps) {
     try {
       if (editingTenant) {
         const merged = { ...editingTenant as Tenant, ...formData }
-        const updatePayload = {
-          fullName: (merged.fullName || '').replace(/\s+/g, ''),
-          phoneNumber: merged.phoneNumber || '',
-          houseNumber: merged.houseNumber || '',
-          contractNumber: merged.contractNumber || '',
-          contractEndDate: merged.contractEndDate ? new Date(merged.contractEndDate).toISOString() : new Date().toISOString(),
-          isActive: merged.isActive ?? true,
-        }
+        const updatePayload = mapToBackend(merged)
+        delete updatePayload.userName
+        delete updatePayload.password
+        if (idImageFile) updatePayload.idImage = idImageFile
+        if (contractFile) updatePayload.contractDocument = contractFile
         await api.updateTenant(String(editingTenant.id), updatePayload)
-        setRentOverride(editingTenant.id, {
-          monthlyRent: merged.monthlyRent ?? 0,
-          annualRent: merged.annualRent ?? 0,
-          waterCost: merged.waterCost ?? 0,
-        })
         setTenants(tenants.map(t => t.id === editingTenant.id ? { ...t, ...formData } as Tenant : t))
       } else {
         const payload = mapToBackend({ ...formData } as Partial<Tenant>)

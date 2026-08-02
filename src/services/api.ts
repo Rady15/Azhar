@@ -448,7 +448,7 @@ export const api = {
   },
 
   async updateTenant(id: string, tenant: Record<string, any>): Promise<TenantModel> {
-    return request<TenantModel>('PUT', `/api/Tenants/${id}`, tenant);
+    return formDataRequest<TenantModel>('PUT', `/api/Tenants/${id}`, tenant);
   },
 
   async deleteTenant(id: string, tenantData: Record<string, any>): Promise<any> {
