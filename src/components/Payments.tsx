@@ -391,10 +391,16 @@ function Payments({ language }: PaymentsProps) {
   const handleDeleteCompany = (id: string) => {
     confirm(
       t('هل أنت متأكد من حذف هذه الشركة؟', 'Are you sure you want to delete this company?'),
-      () => {
-        setCompanies(companies.filter(c => c.id !== id))
-        setCompanyContracts(companyContracts.filter(c => c.companyId !== id))
-        showToast('success', t('تم حذف الشركة', 'Company deleted'))
+      async () => {
+        try {
+          await api.deleteCompany(id)
+          setCompanies(companies.filter(c => c.id !== id))
+          setCompanyContracts(companyContracts.filter(c => c.companyId !== id))
+          showToast('success', t('تم حذف الشركة بنجاح', 'Company deleted successfully'))
+        } catch (err: any) {
+          console.error('Delete company error:', err)
+          showToast('error', t('تعذر حذف الشركة: ', 'Could not delete company: ') + err.message)
+        }
       },
       {
         confirmLabel: t('حذف', 'Delete'),
@@ -418,7 +424,8 @@ function Payments({ language }: PaymentsProps) {
     }
     try {
       if (editingCompany) {
-        setCompanies(companies.map(c => c.id === editingCompany.id ? { ...c, ...companyFormData } as Company : c))
+        const updated = await api.updateCompany(String(editingCompany.id), payload)
+        setCompanies(companies.map(c => c.id === editingCompany.id ? { ...mapCompanyToFrontend(updated), id: editingCompany.id } as Company : c))
       } else {
         const created = await api.createCompany(payload)
         setCompanies([mapCompanyToFrontend(created), ...companies])

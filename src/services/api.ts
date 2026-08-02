@@ -628,6 +628,14 @@ export const api = {
     return request<CompanyModel>('POST', '/api/Company', company);
   },
 
+  async updateCompany(id: string, company: CompanyModel): Promise<CompanyModel> {
+    return request<CompanyModel>('PUT', `/api/Company/${id}`, company);
+  },
+
+  async deleteCompany(id: string): Promise<any> {
+    return request<any>('DELETE', `/api/Company/${id}`);
+  },
+
   // Staff API
   async getStaff(): Promise<StaffModel[]> {
     return request<StaffModel[]>('GET', '/api/staff');

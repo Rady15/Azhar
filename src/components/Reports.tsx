@@ -26,7 +26,7 @@ const COLORS = {
 }
 
 function Reports({ language }: ReportsProps) {
-  const [selectedReport, setSelectedReport] = useState<string>('revenue')
+  const [selectedReport, setSelectedReport] = useState<string>('tenants')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState(DEFAULT_STATS)
@@ -673,7 +673,6 @@ function Reports({ language }: ReportsProps) {
   }
 
   const reportTypes = [
-    { id: 'revenue', label: t('الإيرادات', 'Revenue'), icon: TrendingUp },
     { id: 'tenants', label: t('المستأجرين', 'Tenants'), icon: Users },
     { id: 'villas', label: t('الفلل', 'Villas'), icon: Home },
     { id: 'maintenance', label: t('الصيانة', 'Maintenance'), icon: Wrench },
