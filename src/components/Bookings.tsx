@@ -20,7 +20,7 @@ const STATUS_STYLES: Record<string, string> = {
 }
 
 function Bookings({ language }: BookingsProps) {
-  const { showToast } = useToast()
+  const { showToast, confirm } = useToast()
   const [bookings, setBookings] = useState<BookingModel[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -112,15 +112,23 @@ function Bookings({ language }: BookingsProps) {
   }
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(language === 'AR' ? 'هل أنت متأكد من إلغاء هذا الحجز؟' : 'Are you sure you want to cancel this booking?')) return
-    try {
-      await api.cancelBooking(id)
-      setBookings(prev => prev.filter(b => b.id !== id))
-      showToast('success', language === 'AR' ? 'تم إلغاء الحجز بنجاح' : 'Booking cancelled successfully')
-    } catch (err: any) {
-      console.error('Cancel booking error:', err)
-      showToast('error', language === 'AR' ? `تعذر إلغاء الحجز: ${err.message}` : `Could not cancel booking: ${err.message}`)
-    }
+    confirm(
+      language === 'AR' ? 'هل أنت متأكد من إلغاء هذا الحجز؟' : 'Are you sure you want to cancel this booking?',
+      async () => {
+        try {
+          await api.cancelBooking(id)
+          setBookings(prev => prev.filter(b => b.id !== id))
+          showToast('success', language === 'AR' ? 'تم إلغاء الحجز بنجاح' : 'Booking cancelled successfully')
+        } catch (err: any) {
+          console.error('Cancel booking error:', err)
+          showToast('error', language === 'AR' ? `تعذر إلغاء الحجز: ${err.message}` : `Could not cancel booking: ${err.message}`)
+        }
+      },
+      {
+        confirmLabel: language === 'AR' ? 'إلغاء الحجز' : 'Cancel Booking',
+        cancelLabel: language === 'AR' ? 'رجوع' : 'Back',
+      },
+    )
   }
 
   const handleSave = async () => {

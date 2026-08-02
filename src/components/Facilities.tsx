@@ -12,7 +12,7 @@ interface EnrichedFacility extends FacilityModel {
 }
 
 export default function Facilities({ language }: FacilitiesProps) {
-  const { showToast } = useToast()
+  const { showToast, confirm } = useToast()
   const [facilities, setFacilities] = useState<EnrichedFacility[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -116,17 +116,24 @@ export default function Facilities({ language }: FacilitiesProps) {
   }
 
   const handleDelete = async (id: string) => {
-    if (window.confirm(language === 'AR' ? 'هل أنت متأكد من حذف هذا المرفق بشكل نهائي؟' : 'Are you sure you want to delete this facility permanently?')) {
-      try {
-        const adminEmail = localStorage.getItem('azhar_email') || 'admin@azhar.com'
-        await api.deleteFacility(id, { email: adminEmail })
-        setFacilities(prev => prev.filter(f => f.id !== id))
-        showToast('success', language === 'AR' ? 'تم حذف المرفق بنجاح' : 'Facility deleted successfully')
-      } catch (err: any) {
-        console.error('Delete facility error:', err)
-        showToast('error', language === 'AR' ? `تعذر حذف المرفق: ${err.message}` : `Could not delete facility: ${err.message}`)
-      }
-    }
+    confirm(
+      language === 'AR' ? 'هل أنت متأكد من حذف هذا المرفق بشكل نهائي؟' : 'Are you sure you want to delete this facility permanently?',
+      async () => {
+        try {
+          const adminEmail = localStorage.getItem('azhar_email') || 'admin@azhar.com'
+          await api.deleteFacility(id, { email: adminEmail })
+          setFacilities(prev => prev.filter(f => f.id !== id))
+          showToast('success', language === 'AR' ? 'تم حذف المرفق بنجاح' : 'Facility deleted successfully')
+        } catch (err: any) {
+          console.error('Delete facility error:', err)
+          showToast('error', language === 'AR' ? `تعذر حذف المرفق: ${err.message}` : `Could not delete facility: ${err.message}`)
+        }
+      },
+      {
+        confirmLabel: language === 'AR' ? 'حذف' : 'Delete',
+        cancelLabel: language === 'AR' ? 'إلغاء' : 'Cancel',
+      },
+    )
   }
 
   const handleSave = async (e: React.FormEvent) => {

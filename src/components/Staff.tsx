@@ -23,7 +23,7 @@ interface StaffProps {
 }
 
 export default function Staff({ language }: StaffProps) {
-  const { showToast } = useToast()
+  const { showToast, confirm } = useToast()
   const [staff, setStaff] = useState<StaffModel[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -142,15 +142,23 @@ export default function Staff({ language }: StaffProps) {
   }
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm(language === 'AR' ? 'هل أنت متأكد من حذف هذا العضو؟' : 'Are you sure you want to delete this staff member?')) return
-    try {
-      await api.deleteStaff(id)
-      setStaff(prev => prev.filter(m => m.id !== id))
-      showToast('success', language === 'AR' ? 'تم حذف العضو بنجاح' : 'Staff member deleted successfully')
-    } catch (err: any) {
-      console.error('Delete staff error:', err)
-      showToast('error', language === 'AR' ? `تعذر حذف العضو: ${err.message}` : `Could not delete staff member: ${err.message}`)
-    }
+    confirm(
+      language === 'AR' ? 'هل أنت متأكد من حذف هذا العضو؟' : 'Are you sure you want to delete this staff member?',
+      async () => {
+        try {
+          await api.deleteStaff(id)
+          setStaff(prev => prev.filter(m => m.id !== id))
+          showToast('success', language === 'AR' ? 'تم حذف العضو بنجاح' : 'Staff member deleted successfully')
+        } catch (err: any) {
+          console.error('Delete staff error:', err)
+          showToast('error', language === 'AR' ? `تعذر حذف العضو: ${err.message}` : `Could not delete staff member: ${err.message}`)
+        }
+      },
+      {
+        confirmLabel: language === 'AR' ? 'حذف' : 'Delete',
+        cancelLabel: language === 'AR' ? 'إلغاء' : 'Cancel',
+      },
+    )
   }
 
   const handleSave = async () => {

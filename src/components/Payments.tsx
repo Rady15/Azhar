@@ -87,7 +87,7 @@ const COMPANY_SPECIALIZATIONS: { ar: string; en: string }[] = [
 
 function Payments({ language }: PaymentsProps) {
   const t = (ar: string, en: string) => language === 'AR' ? ar : en
-  const { showToast } = useToast()
+  const { showToast, confirm } = useToast()
   const [payments, setPayments] = useState<Payment[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
@@ -257,15 +257,23 @@ function Payments({ language }: PaymentsProps) {
   }
 
   const handleDeletePayment = async (id: string | number) => {
-    if (!window.confirm(t('هل أنت متأكد من الحذف؟', 'Are you sure you want to delete?'))) return
-    try {
-      await api.deletePayment(String(id))
-      setPayments(payments.filter(p => p.id !== id))
-      showToast('success', t('تم حذف الدفعة بنجاح', 'Payment deleted successfully'))
-    } catch (err: any) {
-      console.error('Delete payment error:', err)
-      showToast('error', t('تعذر حذف الدفعة: ', 'Could not delete payment: ') + err.message)
-    }
+    confirm(
+      t('هل أنت متأكد من حذف هذه الدفعة؟', 'Are you sure you want to delete this payment?'),
+      async () => {
+        try {
+          await api.deletePayment(String(id))
+          setPayments(payments.filter(p => p.id !== id))
+          showToast('success', t('تم حذف الدفعة بنجاح', 'Payment deleted successfully'))
+        } catch (err: any) {
+          console.error('Delete payment error:', err)
+          showToast('error', t('تعذر حذف الدفعة: ', 'Could not delete payment: ') + err.message)
+        }
+      },
+      {
+        confirmLabel: t('حذف', 'Delete'),
+        cancelLabel: t('إلغاء', 'Cancel'),
+      },
+    )
   }
 
   const handleSavePayment = async () => {
@@ -315,15 +323,22 @@ function Payments({ language }: PaymentsProps) {
   }
 
   const handleDeleteExpense = async (id: string) => {
-    if (window.confirm(t('هل أنت متأكد من حذف هذا المصروف؟', 'Are you sure you want to delete this expense?'))) {
-      try {
-        await api.deleteExpense(id)
-        setExpenses(expenses.filter(e => e.id !== id))
-        showToast('success', t('تم حذف المصروف بنجاح', 'Expense deleted successfully'))
-      } catch (err: any) {
-        showToast('error', t('تعذر حذف المصروف: ', 'Could not delete expense: ') + err.message)
-      }
-    }
+    confirm(
+      t('هل أنت متأكد من حذف هذا المصروف؟', 'Are you sure you want to delete this expense?'),
+      async () => {
+        try {
+          await api.deleteExpense(id)
+          setExpenses(expenses.filter(e => e.id !== id))
+          showToast('success', t('تم حذف المصروف بنجاح', 'Expense deleted successfully'))
+        } catch (err: any) {
+          showToast('error', t('تعذر حذف المصروف: ', 'Could not delete expense: ') + err.message)
+        }
+      },
+      {
+        confirmLabel: t('حذف', 'Delete'),
+        cancelLabel: t('إلغاء', 'Cancel'),
+      },
+    )
   }
 
   const handleSaveExpense = async () => {
@@ -374,10 +389,18 @@ function Payments({ language }: PaymentsProps) {
   }
 
   const handleDeleteCompany = (id: string) => {
-    if (window.confirm(t('هل أنت متأكد من حذف هذه الشركة؟', 'Are you sure you want to delete this company?'))) {
-      setCompanies(companies.filter(c => c.id !== id))
-      setCompanyContracts(companyContracts.filter(c => c.companyId !== id))
-    }
+    confirm(
+      t('هل أنت متأكد من حذف هذه الشركة؟', 'Are you sure you want to delete this company?'),
+      () => {
+        setCompanies(companies.filter(c => c.id !== id))
+        setCompanyContracts(companyContracts.filter(c => c.companyId !== id))
+        showToast('success', t('تم حذف الشركة', 'Company deleted'))
+      },
+      {
+        confirmLabel: t('حذف', 'Delete'),
+        cancelLabel: t('إلغاء', 'Cancel'),
+      },
+    )
   }
 
   const handleSaveCompany = async () => {
@@ -447,9 +470,17 @@ function Payments({ language }: PaymentsProps) {
   }
 
   const handleDeleteContract = (id: string) => {
-    if (window.confirm(t('هل أنت متأكد من حذف هذا العقد؟', 'Are you sure you want to delete this contract?'))) {
-      setCompanyContracts(companyContracts.filter(c => c.id !== id))
-    }
+    confirm(
+      t('هل أنت متأكد من حذف هذا العقد؟', 'Are you sure you want to delete this contract?'),
+      () => {
+        setCompanyContracts(companyContracts.filter(c => c.id !== id))
+        showToast('success', t('تم حذف العقد', 'Contract deleted'))
+      },
+      {
+        confirmLabel: t('حذف', 'Delete'),
+        cancelLabel: t('إلغاء', 'Cancel'),
+      },
+    )
   }
 
   const handleSaveContract = () => {

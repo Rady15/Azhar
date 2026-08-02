@@ -32,7 +32,7 @@ interface VillasProps {
 }
 
 function Villas({ language }: VillasProps) {
-  const { showToast } = useToast()
+  const { showToast, confirm } = useToast()
   const [villas, setVillas] = useState<Villa[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -151,16 +151,23 @@ function Villas({ language }: VillasProps) {
   }
 
   const handleDelete = async (id: string | number) => {
-    if (window.confirm(language === 'AR' ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete?')) {
-      try {
-        await api.deleteVilla(String(id))
-        setVillas(villas.filter(v => v.id !== id))
-        showToast('success', language === 'AR' ? 'تم حذف الفيلا بنجاح' : 'Villa deleted successfully')
-      } catch (err: any) {
-        console.error('Delete villa error:', err)
-        showToast('error', language === 'AR' ? `تعذر حذف الفيلا: ${err.message}` : `Could not delete villa: ${err.message}`)
-      }
-    }
+    confirm(
+      language === 'AR' ? 'هل أنت متأكد من حذف هذه الفيلا؟' : 'Are you sure you want to delete this villa?',
+      async () => {
+        try {
+          await api.deleteVilla(String(id))
+          setVillas(villas.filter(v => v.id !== id))
+          showToast('success', language === 'AR' ? 'تم حذف الفيلا بنجاح' : 'Villa deleted successfully')
+        } catch (err: any) {
+          console.error('Delete villa error:', err)
+          showToast('error', language === 'AR' ? `تعذر حذف الفيلا: ${err.message}` : `Could not delete villa: ${err.message}`)
+        }
+      },
+      {
+        confirmLabel: language === 'AR' ? 'حذف' : 'Delete',
+        cancelLabel: language === 'AR' ? 'إلغاء' : 'Cancel',
+      },
+    )
   }
 
   const handleSave = async () => {

@@ -28,7 +28,7 @@ interface AdsProps {
 
 function Ads({ language }: AdsProps) {
   const t = (ar: string, en: string) => language === 'AR' ? ar : en
-  const { showToast } = useToast()
+  const { showToast, confirm } = useToast()
   const [letters, setLetters] = useState<Letter[]>([])
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loadingTenants, setLoadingTenants] = useState(false)
@@ -92,10 +92,17 @@ function Ads({ language }: AdsProps) {
   }
 
   const handleDelete = (id: string) => {
-    if (window.confirm(t('هل أنت متأكد من حذف هذا الخطاب؟', 'Are you sure you want to delete this letter?'))) {
-      setLetters(letters.filter(l => l.id !== id))
-      showToast('success', t('تم حذف الخطاب', 'Letter deleted'))
-    }
+    confirm(
+      t('هل أنت متأكد من حذف هذا الخطاب؟', 'Are you sure you want to delete this letter?'),
+      () => {
+        setLetters(letters.filter(l => l.id !== id))
+        showToast('success', t('تم حذف الخطاب', 'Letter deleted'))
+      },
+      {
+        confirmLabel: t('حذف', 'Delete'),
+        cancelLabel: t('إلغاء', 'Cancel'),
+      },
+    )
   }
 
   const handleSend = async (id: string) => {

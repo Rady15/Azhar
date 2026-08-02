@@ -41,7 +41,7 @@ interface TenantsProps {
 const isImageUrl = (url: string) => /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(url)
 
 function Tenants({ language }: TenantsProps) {
-  const { showToast } = useToast()
+  const { showToast, confirm } = useToast()
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -191,19 +191,27 @@ function Tenants({ language }: TenantsProps) {
   }
 
   const handleDelete = async (id: string | number) => {
-    if (window.confirm(language === 'AR' ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete?')) {
-      const target = tenants.find(t => t.id === id)
-      if (!target) return
+    const target = tenants.find(t => t.id === id)
+    if (!target) return
 
-      try {
-        await api.deleteTenant(String(id), mapToBackend(target))
-        setTenants(tenants.filter(t => t.id !== id))
-      } catch (err: any) {
-        console.error('Delete tenant error:', err)
-        showToast('error', language === 'AR' ? `تعذر حذف المستأجر: ${err.message}` : `Could not delete tenant: ${err.message}`)
-        setTenants(tenants.filter(t => t.id !== id))
-      }
-    }
+    confirm(
+      language === 'AR' ? 'هل أنت متأكد من حذف هذا المستأجر؟' : 'Are you sure you want to delete this tenant?',
+      async () => {
+        try {
+          await api.deleteTenant(String(id), mapToBackend(target))
+          setTenants(tenants.filter(t => t.id !== id))
+          showToast('success', language === 'AR' ? 'تم حذف المستأجر بنجاح' : 'Tenant deleted successfully')
+        } catch (err: any) {
+          console.error('Delete tenant error:', err)
+          showToast('error', language === 'AR' ? `تعذر حذف المستأجر: ${err.message}` : `Could not delete tenant: ${err.message}`)
+          setTenants(tenants.filter(t => t.id !== id))
+        }
+      },
+      {
+        confirmLabel: language === 'AR' ? 'حذف' : 'Delete',
+        cancelLabel: language === 'AR' ? 'إلغاء' : 'Cancel',
+      },
+    )
   }
 
   const handleToggleActive = async (tenant: Tenant) => {
