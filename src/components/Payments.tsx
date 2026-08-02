@@ -88,13 +88,6 @@ const COMPANY_SPECIALIZATIONS: { ar: string; en: string }[] = [
 function Payments({ language }: PaymentsProps) {
   const t = (ar: string, en: string) => language === 'AR' ? ar : en
   const { showToast } = useToast()
-  const getDeletedPaymentIds = (): Set<string> => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem('azhar_deleted_payments') || '[]') as string[])
-    } catch {
-      return new Set()
-    }
-  }
   const [payments, setPayments] = useState<Payment[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
@@ -183,6 +176,18 @@ function Payments({ language }: PaymentsProps) {
     paymentMethod: payment.paymentMethod === 'card' ? 'Card' : payment.paymentMethod === 'bank_transfer' ? 'Card' : 'Cash'
   })
 
+  const enrichPayment = (p: Payment, tenantList: TenantModel[]): Payment => {
+    const tenant = tenantList.find(t => String(t.id) === String(p.tenantId))
+    if (tenant) {
+      return {
+        ...p,
+        tenantName: p.tenantName || tenant.fullName || '',
+        villaNumber: p.villaNumber || tenant.houseNumber || '',
+      }
+    }
+    return p
+  }
+
   const fetchExpenses = async () => {
     try {
       const data = await api.getExpenses()
@@ -197,25 +202,24 @@ function Payments({ language }: PaymentsProps) {
     } catch { setCompanies([]) }
   }
 
-  const fetchTenants = async () => {
+  const fetchTenants = async (): Promise<TenantModel[]> => {
     try {
       const data = await api.getTenants()
       const list: TenantModel[] = Array.isArray(data) ? data : (data as any)?.tenants ?? []
       setTenants(list)
-    } catch { setTenants([]) }
+      return list
+    } catch { setTenants([]); return [] }
   }
 
-  const fetchPayments = async () => {
+  const fetchPayments = async (tenantList: TenantModel[] = tenants) => {
     setLoading(true)
     setError('')
     try {
       const data = await api.getPayments()
-      const deletedIds = getDeletedPaymentIds()
-      const filterDeleted = (list: any[]) => list.filter((p: any) => !deletedIds.has(String(p.id)))
       if (Array.isArray(data)) {
-        setPayments(filterDeleted(data).map(mapToFrontend))
+        setPayments(data.map(mapToFrontend).map(p => enrichPayment(p, tenantList)))
       } else if (data && Array.isArray((data as any).payments)) {
-        setPayments(filterDeleted((data as any).payments).map(mapToFrontend))
+        setPayments((data as any).payments.map(mapToFrontend).map((p: Payment) => enrichPayment(p, tenantList)))
       }
     } catch (err: any) {
       console.error('Fetch payments error:', err)
@@ -227,10 +231,11 @@ function Payments({ language }: PaymentsProps) {
   }
 
   useEffect(() => {
-    fetchPayments()
-    fetchExpenses()
-    fetchCompanies()
-    fetchTenants()
+    fetchTenants().then((list) => {
+      fetchPayments(list)
+      fetchExpenses()
+      fetchCompanies()
+    })
   }, [])
 
   // Payment CRUD
@@ -251,25 +256,29 @@ function Payments({ language }: PaymentsProps) {
     setShowPaymentView(true)
   }
 
-  const handleDeletePayment = (id: string | number) => {
-    if (window.confirm(t('هل أنت متأكد من الحذف؟', 'Are you sure you want to delete?'))) {
-      const deleted = getDeletedPaymentIds()
-      deleted.add(String(id))
-      localStorage.setItem('azhar_deleted_payments', JSON.stringify(Array.from(deleted)))
+  const handleDeletePayment = async (id: string | number) => {
+    if (!window.confirm(t('هل أنت متأكد من الحذف؟', 'Are you sure you want to delete?'))) return
+    try {
+      await api.deletePayment(String(id))
       setPayments(payments.filter(p => p.id !== id))
+      showToast('success', t('تم حذف الدفعة بنجاح', 'Payment deleted successfully'))
+    } catch (err: any) {
+      console.error('Delete payment error:', err)
+      showToast('error', t('تعذر حذف الدفعة: ', 'Could not delete payment: ') + err.message)
     }
   }
 
   const handleSavePayment = async () => {
     try {
       if (editingPayment) {
-        const status = paymentFormData.status === 'paid' ? 'Paid' : paymentFormData.status === 'late' ? 'Late' : paymentFormData.status === 'cancelled' ? 'Cancelled' : 'Pending';
-        await api.updatePaymentStatus(String(editingPayment.id), { status })
-        setPayments(payments.map(p => p.id === editingPayment.id ? { ...p, ...paymentFormData } as Payment : p))
+        const payload = mapToBackend(paymentFormData)
+        await api.updatePayment(String(editingPayment.id), payload)
+        const merged = enrichPayment({ ...editingPayment, ...paymentFormData } as Payment, tenants)
+        setPayments(payments.map(p => p.id === editingPayment.id ? merged : p))
       } else {
         const payload = mapToBackend(paymentFormData)
         const newPaymentBackend = await api.createPayment(payload)
-        const newPayment = mapToFrontend(newPaymentBackend)
+        const newPayment = enrichPayment(mapToFrontend(newPaymentBackend), tenants)
         setPayments([...payments, newPayment])
       }
       setShowPaymentModal(false)

@@ -594,6 +594,14 @@ export const api = {
     return request<any>('PUT', `/api/Payment/${id}/status`, statusData);
   },
 
+  async updatePayment(id: string, payment: PaymentModel): Promise<PaymentModel> {
+    return request<PaymentModel>('PUT', `/api/Payment/${id}`, payment);
+  },
+
+  async deletePayment(id: string): Promise<any> {
+    return request<any>('DELETE', `/api/Payment/${id}`);
+  },
+
   // Expenses API
   async getExpenses(): Promise<ExpenseModel[]> {
     return request<ExpenseModel[]>('GET', '/api/Expense').catch(() => []);

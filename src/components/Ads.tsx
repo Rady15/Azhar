@@ -29,17 +29,7 @@ interface AdsProps {
 function Ads({ language }: AdsProps) {
   const t = (ar: string, en: string) => language === 'AR' ? ar : en
   const { showToast } = useToast()
-  const [letters, setLetters] = useState<Letter[]>(() => {
-    const stored = localStorage.getItem('azhar_letters')
-    return stored ? JSON.parse(stored) : []
-  })
-  const getDeletedLetterIds = (): Set<string> => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem('azhar_deleted_letters') || '[]') as string[])
-    } catch {
-      return new Set()
-    }
-  }
+  const [letters, setLetters] = useState<Letter[]>([])
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loadingTenants, setLoadingTenants] = useState(false)
 
@@ -50,48 +40,46 @@ function Ads({ language }: AdsProps) {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    localStorage.setItem('azhar_letters', JSON.stringify(letters))
-  }, [letters])
+  const mapServerLetter = (l: any, tenantList: Tenant[]): Letter => {
+    const isSpecific = l.recipientType === 'SpecificTenant' || Number(l.recipientType) === 1
+    const tenant = isSpecific ? tenantList.find(tt => String(tt.id) === String(l.recipientId)) : undefined
+    return {
+      id: l.id || `LET-${Date.now()}`,
+      title: l.title || '',
+      content: l.content || '',
+      recipientType: isSpecific ? 'specific' : 'all',
+      recipientId: l.recipientId || '',
+      recipientName: isSpecific ? (tenant?.fullName || (l.recipientName && l.recipientName !== 'All Tenants' ? l.recipientName : '') || l.recipientId || '') : '',
+      sentDate: (l.sentAt || l.sentDate || '').split('T')[0],
+      status: 'sent' as const,
+    }
+  }
 
-  useEffect(() => {
-    api.getLetters().then((data: any) => {
-      if (Array.isArray(data) && data.length > 0) {
-        const deletedIds = getDeletedLetterIds()
-        const serverLetters: Letter[] = data
-          .filter((l: any) => !deletedIds.has(l.id))
-          .map((l: any) => ({
-          id: l.id || `LET-${Date.now()}`,
-          title: l.title || '',
-          content: l.content || '',
-          recipientType: l.recipientType === 1 ? 'specific' : 'all',
-          recipientId: l.recipientId || '',
-          recipientName: l.recipientName || '',
-          sentDate: l.sentDate ? l.sentDate.split('T')[0] : new Date().toISOString().split('T')[0],
-          status: 'sent' as const,
-        }))
-        setLetters(prev => {
-          const existingIds = new Set(prev.map(p => p.id))
-          const existingKeys = new Set(prev.map(p => `${p.title}|${p.content}|${p.recipientName}`))
-          const newOnes = serverLetters.filter(s => !existingIds.has(s.id) && !existingKeys.has(`${s.title}|${s.content}|${s.recipientName}`))
-          return [...newOnes, ...prev]
-        })
+  const fetchLetters = async (tenantList: Tenant[]) => {
+    try {
+      const data = await api.getLetters()
+      if (Array.isArray(data)) {
+        setLetters(data.map((l: any) => mapServerLetter(l, tenantList)))
       }
-    }).catch(() => {})
-  }, [])
+    } catch (err: any) {
+      console.error('Fetch letters error:', err)
+    }
+  }
 
   useEffect(() => {
+    let cancelled = false
     setLoadingTenants(true)
     api.getTenants()
       .then((data: any) => {
         const raw = Array.isArray(data) ? data : Array.isArray(data?.tenants) ? data.tenants : Array.isArray(data?.data) ? data.data : []
-        setTenants(raw.map((t: any) => ({ id: String(t.id || t.tenantId || ''), fullName: t.fullName || t.name || '', email: t.email || '', houseNumber: t.houseNumber || t.villaNumber || '', phoneNumber: t.phoneNumber || '' })))
+        const list = raw.map((t: any) => ({ id: String(t.id || t.tenantId || ''), fullName: t.fullName || t.name || '', email: t.email || '', houseNumber: t.houseNumber || t.villaNumber || '', phoneNumber: t.phoneNumber || '' }))
+        setTenants(list)
+        if (!cancelled) fetchLetters(list)
       })
       .catch(() => {})
       .finally(() => setLoadingTenants(false))
+    return () => { cancelled = true }
   }, [])
-
-  const getNextId = () => `LET-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 
   const handleAdd = () => {
     setFormData({ title: '', content: '', recipientType: 'all', recipientId: '', recipientName: '', sentDate: new Date().toISOString().split('T')[0], status: 'draft' })
@@ -105,10 +93,8 @@ function Ads({ language }: AdsProps) {
 
   const handleDelete = (id: string) => {
     if (window.confirm(t('هل أنت متأكد من حذف هذا الخطاب؟', 'Are you sure you want to delete this letter?'))) {
-      const deleted = getDeletedLetterIds()
-      deleted.add(id)
-      localStorage.setItem('azhar_deleted_letters', JSON.stringify(Array.from(deleted)))
       setLetters(letters.filter(l => l.id !== id))
+      showToast('success', t('تم حذف الخطاب', 'Letter deleted'))
     }
   }
 
@@ -125,8 +111,8 @@ function Ads({ language }: AdsProps) {
         recipientType,
         recipientId: letter.recipientType === 'specific' ? letter.recipientId : undefined,
       })
-      setLetters(letters.map(l => l.id === id ? { ...l, status: 'sent' as const, sentDate: new Date().toISOString().split('T')[0] } : l))
       showToast('success', t('تم إرسال الخطاب بنجاح', 'Letter sent successfully'))
+      fetchLetters(tenants)
     } catch (err: any) {
       console.error('Send letter error:', err)
       showToast('error', t('تعذر إرسال الخطاب', 'Could not send letter'))
@@ -145,10 +131,6 @@ function Ads({ language }: AdsProps) {
       return
     }
 
-    const recipientName = formData.recipientType === 'all'
-      ? t('جميع المستأجرين', 'All Tenants')
-      : tenants.find(tt => tt.id === formData.recipientId)?.fullName || formData.recipientName || ''
-
     setSaving(true)
     try {
       const recipientType = formData.recipientType === 'all' ? 0 : 1
@@ -158,26 +140,15 @@ function Ads({ language }: AdsProps) {
         recipientType,
         recipientId: formData.recipientType === 'specific' ? formData.recipientId : undefined,
       })
+      setShowModal(false)
+      setSaving(false)
+      showToast('success', t('تم إرسال الخطاب بنجاح', 'Letter sent successfully'))
+      fetchLetters(tenants)
     } catch (err: any) {
       console.error('Send letter error:', err)
       showToast('error', t('تعذر إرسال الخطاب', 'Could not send letter'))
       setSaving(false)
-      return
     }
-
-    setLetters([{
-      id: getNextId(),
-      title: formData.title || '',
-      content: formData.content || '',
-      recipientType: formData.recipientType === 'specific' ? 'specific' : 'all',
-      recipientId: formData.recipientId || '',
-      recipientName,
-      sentDate: new Date().toISOString().split('T')[0],
-      status: 'sent',
-    }, ...letters])
-    setShowModal(false)
-    setSaving(false)
-    showToast('success', t('تم إرسال الخطاب بنجاح', 'Letter sent successfully'))
   }
 
   const draftCount = letters.filter(l => l.status === 'draft').length
