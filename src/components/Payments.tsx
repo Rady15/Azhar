@@ -86,6 +86,13 @@ const COMPANY_SPECIALIZATIONS: { ar: string; en: string }[] = [
 
 function Payments({ language }: PaymentsProps) {
   const t = (ar: string, en: string) => language === 'AR' ? ar : en
+  const getDeletedPaymentIds = (): Set<string> => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('azhar_deleted_payments') || '[]') as string[])
+    } catch {
+      return new Set()
+    }
+  }
   const [payments, setPayments] = useState<Payment[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
@@ -201,10 +208,12 @@ function Payments({ language }: PaymentsProps) {
     setError('')
     try {
       const data = await api.getPayments()
+      const deletedIds = getDeletedPaymentIds()
+      const filterDeleted = (list: any[]) => list.filter((p: any) => !deletedIds.has(String(p.id)))
       if (Array.isArray(data)) {
-        setPayments(data.map(mapToFrontend))
+        setPayments(filterDeleted(data).map(mapToFrontend))
       } else if (data && Array.isArray((data as any).payments)) {
-        setPayments((data as any).payments.map(mapToFrontend))
+        setPayments(filterDeleted((data as any).payments).map(mapToFrontend))
       }
     } catch (err: any) {
       console.error('Fetch payments error:', err)
@@ -242,6 +251,9 @@ function Payments({ language }: PaymentsProps) {
 
   const handleDeletePayment = (id: string | number) => {
     if (window.confirm(t('هل أنت متأكد من الحذف؟', 'Are you sure you want to delete?'))) {
+      const deleted = getDeletedPaymentIds()
+      deleted.add(String(id))
+      localStorage.setItem('azhar_deleted_payments', JSON.stringify(Array.from(deleted)))
       setPayments(payments.filter(p => p.id !== id))
     }
   }

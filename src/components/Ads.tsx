@@ -31,6 +31,13 @@ function Ads({ language }: AdsProps) {
     const stored = localStorage.getItem('azhar_letters')
     return stored ? JSON.parse(stored) : []
   })
+  const getDeletedLetterIds = (): Set<string> => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('azhar_deleted_letters') || '[]') as string[])
+    } catch {
+      return new Set()
+    }
+  }
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loadingTenants, setLoadingTenants] = useState(false)
 
@@ -48,7 +55,10 @@ function Ads({ language }: AdsProps) {
   useEffect(() => {
     api.getLetters().then((data: any) => {
       if (Array.isArray(data) && data.length > 0) {
-        const serverLetters: Letter[] = data.map((l: any) => ({
+        const deletedIds = getDeletedLetterIds()
+        const serverLetters: Letter[] = data
+          .filter((l: any) => !deletedIds.has(l.id))
+          .map((l: any) => ({
           id: l.id || `LET-${Date.now()}`,
           title: l.title || '',
           content: l.content || '',
@@ -93,6 +103,9 @@ function Ads({ language }: AdsProps) {
 
   const handleDelete = (id: string) => {
     if (window.confirm(t('هل أنت متأكد من حذف هذا الخطاب؟', 'Are you sure you want to delete this letter?'))) {
+      const deleted = getDeletedLetterIds()
+      deleted.add(id)
+      localStorage.setItem('azhar_deleted_letters', JSON.stringify(Array.from(deleted)))
       setLetters(letters.filter(l => l.id !== id))
     }
   }
