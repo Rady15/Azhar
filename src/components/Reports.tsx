@@ -173,6 +173,13 @@ function Reports({ language }: ReportsProps) {
     <span className="inline-flex items-center gap-0.5 whitespace-nowrap">{n.toLocaleString()}{withCur ? <CurrencySymbol className="h-[1em] w-[0.9em] inline-block" /> : null}</span>
   ) : '—'
   const dateFmt = (d?: string) => d ? new Date(d).toLocaleDateString(ar ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
+  const rentOf = (t: TenantModel) => {
+    const m = num(t.monthlyRent)
+    if (m > 0) return m
+    const a = num(t.annualRent)
+    if (a > 0) return Math.round(a / 12)
+    return 0
+  }
   const statusOf = (p: PaymentModel) => String(p.status || '').toLowerCase()
 
   const enrichPayment = (p: PaymentModel): PaymentModel => {
@@ -208,7 +215,7 @@ function Reports({ language }: ReportsProps) {
 
   const monthTenants = tenants.filter(t => {
     const expired = t.isActive === false || String((t as any).status || '').toLowerCase() === 'expired'
-    return !expired || num(t.monthlyRent) > 0
+    return !expired || rentOf(t) > 0
   })
 
   const classify = (tenant: TenantModel): PayRow => {
@@ -238,7 +245,7 @@ function Reports({ language }: ReportsProps) {
     if (arrears.length) {
       return { tenant, status: 'late', paid: 0, owed: arrears.reduce((s, p) => s + num(p.amount), 0) }
     }
-    return { tenant, status: 'none', paid: 0, owed: num(tenant.monthlyRent) }
+    return { tenant, status: 'none', paid: 0, owed: rentOf(tenant) }
   }
 
   const paymentRows: PayRow[] = monthTenants.map(classify)
@@ -302,7 +309,7 @@ function Reports({ language }: ReportsProps) {
         const rows = tenantRows.map(({ t: tn, pr }) => [
           tn.fullName, tn.phoneNumber || '—', tn.houseNumber || '—', tn.contractNumber || '—',
           dateFmt(tn.contractStartDate), dateFmt(tn.contractEndDate),
-          num(tn.monthlyRent) ? num(tn.monthlyRent) : '—',
+          num(tn.monthlyRent) ? num(tn.monthlyRent) : (num(tn.annualRent) ? Math.round(num(tn.annualRent) / 12) : '—'),
           t(STATUS_STYLES[pr.status].ar, STATUS_STYLES[pr.status].en),
           pr.status === 'paid' ? '—' : (pr.owed || '—'),
         ])
@@ -315,7 +322,7 @@ function Reports({ language }: ReportsProps) {
           h.area ? `${h.area} m²` : '—', h.hasGarage ? (ar ? 'نعم' : 'Yes') : (ar ? 'لا' : 'No'),
           h.hasGarden ? (ar ? 'نعم' : 'Yes') : (ar ? 'لا' : 'No'),
           tenant?.fullName || (h.userDisplayName || '—'), tenant?.phoneNumber || '—',
-          tenant ? (num(tenant.monthlyRent) || '—') : '—',
+          tenant ? (rentOf(tenant) || '—') : '—',
           occupied ? t('مشغولة', 'Occupied') : t('متاحة', 'Available'),
         ])
         return { columns, rows }
@@ -333,7 +340,7 @@ function Reports({ language }: ReportsProps) {
         const columns = [t('المستأجر', 'Tenant'), t('الوحدة', 'Unit'), t('الهاتف', 'Phone'), t('الإيجار', 'Rent'), t('الحالة', 'Status'), t('المدفوع', 'Paid'), t('المتبقي', 'Outstanding'), t('التاريخ', 'Date')]
         const rows = paymentRows.map(r => [
           r.tenant.fullName || '—', r.tenant.houseNumber || '—', r.tenant.phoneNumber || '—',
-          num(r.tenant.monthlyRent) || '—',
+          rentOf(r.tenant) || '—',
           t(STATUS_STYLES[r.status].ar, STATUS_STYLES[r.status].en),
           r.paid || '—', r.owed || '—', r.paymentDate ? dateFmt(r.paymentDate) : '—',
         ])
@@ -829,7 +836,7 @@ function Reports({ language }: ReportsProps) {
                 h.hasGarden ? (ar ? 'نعم' : 'Yes') : (ar ? 'لا' : 'No'),
                 <span key="n" className="font-semibold">{tenant?.fullName || h.userDisplayName || '—'}</span>,
                 <span key="p" dir="ltr" className="text-xs">{tenant?.phoneNumber || '—'}</span>,
-                <span key="r" className="font-bold">{tenant ? money(num(tenant.monthlyRent)) : '—'}</span>,
+                <span key="r" className="font-bold">{tenant ? money(rentOf(tenant)) : '—'}</span>,
                 <span key="s" className={`px-2.5 py-1 rounded-full text-xs font-bold ${occupied ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
                   {occupied ? t('مشغولة', 'Occupied') : t('متاحة', 'Available')}
                 </span>,
@@ -955,7 +962,7 @@ function Reports({ language }: ReportsProps) {
                 <span key="n" className="font-semibold text-slate-800">{r.tenant.fullName || '—'}</span>,
                 r.tenant.houseNumber || '—',
                 <span key="p" dir="ltr" className="text-xs">{r.tenant.phoneNumber || '—'}</span>,
-                <span key="r" className="font-bold">{num(r.tenant.monthlyRent) ? money(num(r.tenant.monthlyRent)) : '—'}</span>,
+                <span key="r" className="font-bold">{rentOf(r.tenant) ? money(rentOf(r.tenant)) : '—'}</span>,
                 <StatusBadge key="sb" status={r.status} />,
                 r.paid ? <span key="pd" className="text-emerald-600 font-bold">{money(r.paid)}</span> : <span key="pd0" className="text-slate-300">—</span>,
                 r.owed ? <span key="od" className="text-red-500 font-bold">{money(r.owed)}</span> : <span key="od0" className="text-slate-300">—</span>,
@@ -1007,7 +1014,7 @@ function Reports({ language }: ReportsProps) {
               tn.contractNumber || '—',
               <span key="s" className="text-xs">{dateFmt(tn.contractStartDate)}</span>,
               <span key="e" className="text-xs">{dateFmt(tn.contractEndDate)}</span>,
-              <span key="r" className="font-bold">{num(tn.monthlyRent) ? money(num(tn.monthlyRent)) : '—'}</span>,
+              <span key="r" className="font-bold">{rentOf(tn) ? money(rentOf(tn)) : '—'}</span>,
               <StatusBadge key="sb" status={pr.status} />,
               pr.status === 'paid'
                 ? <span key="o" className="text-emerald-600 font-bold">—</span>

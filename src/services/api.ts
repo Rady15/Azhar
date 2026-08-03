@@ -310,6 +310,9 @@ export interface TenantModel {
   contractStartDate?: string;
   contractEndDate: string;
   monthlyRent?: number;
+  annualRent?: number;
+  paymentMethod?: string;
+  status?: string;
   paymentDueDay?: number;
   nationalId?: string;
   nationality?: string;
