@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Edit, Eye, X, Home, Loader2, Calendar, DollarSign, Wrench, Star, Upload, Flag, UserCircle, LayoutList, Grid3X3, User } from 'lucide-react'
+import { Plus, Edit, Eye, X, Home, Loader2, Calendar, DollarSign, Wrench, Star, Upload, Flag, UserCircle, LayoutList, Grid3X3, User, Trash2 } from 'lucide-react'
 import { api, MaintenanceModel, StaffModel, API_BASE_URL } from '../services/api'
 import CurrencySymbol from './CurrencySymbol'
 import { useToast } from './Toast'
@@ -29,7 +29,7 @@ const STATUS_STYLES: Record<string, string> = {
 }
 
 function Maintenance({ language }: MaintenanceProps) {
-  const { showToast } = useToast()
+  const { showToast, confirm } = useToast()
   const [requests, setRequests] = useState<MaintenanceRequest[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -135,6 +135,26 @@ function Maintenance({ language }: MaintenanceProps) {
   const handleView = (request: MaintenanceRequest) => {
     setViewingRequest(request)
     setShowViewModal(true)
+  }
+
+  const handleDelete = (request: MaintenanceRequest) => {
+    confirm(
+      t('هل أنت متأكد من حذف طلب الصيانة هذا؟', 'Are you sure you want to delete this maintenance request?'),
+      async () => {
+        try {
+          await api.deleteMaintenance(String(request.id))
+          setRequests(requests.filter(r => r.id !== request.id))
+          showToast('success', t('تم حذف طلب الصيانة', 'Maintenance request deleted'))
+        } catch (err: any) {
+          console.error('Delete maintenance error:', err)
+          showToast('error', t('تعذر حذف طلب الصيانة: ', 'Could not delete maintenance request: ') + err.message)
+        }
+      },
+      {
+        confirmLabel: t('حذف', 'Delete'),
+        cancelLabel: t('إلغاء', 'Cancel'),
+      },
+    )
   }
 
   const handleSave = async () => {
@@ -279,6 +299,7 @@ function Maintenance({ language }: MaintenanceProps) {
                     <div className="flex items-center gap-2">
                       <button onClick={() => handleView(request)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title={t('عرض', 'View')}><Eye className="w-4 h-4" /></button>
                       <button onClick={() => handleEdit(request)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg" title={t('تعديل', 'Edit')}><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(request)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title={t('حذف', 'Delete')}><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -310,6 +331,7 @@ function Maintenance({ language }: MaintenanceProps) {
               <div className="flex items-center justify-end gap-1 pt-3 border-t border-slate-100">
                 <button onClick={() => handleView(request)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-3.5 h-3.5" /></button>
                 <button onClick={() => handleEdit(request)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"><Edit className="w-3.5 h-3.5" /></button>
+                <button onClick={() => handleDelete(request)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
             </div>
           ))}

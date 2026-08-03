@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, Edit, Eye, X, User, Home, Loader2, Send, Calendar, Tag, MessageSquare, CheckCircle, Upload, LayoutList, Grid3X3 } from 'lucide-react'
+import { Plus, Edit, Eye, X, User, Home, Loader2, Send, Calendar, Tag, MessageSquare, CheckCircle, Upload, LayoutList, Grid3X3, Trash2 } from 'lucide-react'
 import { api, API_BASE_URL } from '../services/api'
 import { useToast } from './Toast'
 
@@ -39,7 +39,7 @@ const STATUS_STYLES: Record<string, string> = {
 }
 
 function Complaints({ language }: ComplaintsProps) {
-  const { showToast } = useToast()
+  const { showToast, confirm } = useToast()
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -168,6 +168,26 @@ function Complaints({ language }: ComplaintsProps) {
     setShowViewModal(true)
   }
 
+  const handleDelete = (complaint: Complaint) => {
+    confirm(
+      t('هل أنت متأكد من حذف هذه الشكوى؟', 'Are you sure you want to delete this complaint?'),
+      async () => {
+        try {
+          await api.deleteComplaint(String(complaint.id))
+          setComplaints(complaints.filter(c => c.id !== complaint.id))
+          showToast('success', t('تم حذف الشكوى', 'Complaint deleted'))
+        } catch (err: any) {
+          console.error('Delete complaint error:', err)
+          showToast('error', t('تعذر حذف الشكوى: ', 'Could not delete complaint: ') + err.message)
+        }
+      },
+      {
+        confirmLabel: t('حذف', 'Delete'),
+        cancelLabel: t('إلغاء', 'Cancel'),
+      },
+    )
+  }
+
   const handleSave = async () => {
     setSaving(true)
     try {
@@ -293,6 +313,7 @@ function Complaints({ language }: ComplaintsProps) {
                     <div className="flex items-center gap-2">
                       <button onClick={() => handleView(complaint)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title={t('عرض', 'View')}><Eye className="w-4 h-4" /></button>
                       <button onClick={() => handleEdit(complaint)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg" title={t('تعديل', 'Edit')}><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(complaint)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg" title={t('حذف', 'Delete')}><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
@@ -317,6 +338,7 @@ function Complaints({ language }: ComplaintsProps) {
                 <div className="flex items-center gap-1">
                   <button onClick={() => handleView(complaint)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><Eye className="w-3.5 h-3.5" /></button>
                   <button onClick={() => handleEdit(complaint)} className="p-1.5 text-amber-600 hover:bg-amber-50 rounded-lg"><Edit className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => handleDelete(complaint)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
               </div>
             </div>

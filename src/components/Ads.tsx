@@ -94,9 +94,15 @@ function Ads({ language }: AdsProps) {
   const handleDelete = (id: string) => {
     confirm(
       t('هل أنت متأكد من حذف هذا الخطاب؟', 'Are you sure you want to delete this letter?'),
-      () => {
-        setLetters(letters.filter(l => l.id !== id))
-        showToast('success', t('تم حذف الخطاب', 'Letter deleted'))
+      async () => {
+        try {
+          await api.deleteLetter(id)
+          setLetters(letters.filter(l => l.id !== id))
+          showToast('success', t('تم حذف الخطاب', 'Letter deleted'))
+        } catch (err: any) {
+          console.error('Delete letter error:', err)
+          showToast('error', t('تعذر حذف الخطاب: ', 'Could not delete letter: ') + err.message)
+        }
       },
       {
         confirmLabel: t('حذف', 'Delete'),

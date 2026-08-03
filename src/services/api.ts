@@ -810,6 +810,10 @@ export const api = {
     return request<any[]>('GET', '/api/letters');
   },
 
+  async deleteLetter(id: string): Promise<any> {
+    return request<any>('DELETE', `/api/letters/${id}`);
+  },
+
   // Reports API
   async getFinancialReport(): Promise<FinancialReport> {
     return request<FinancialReport>('GET', '/api/Reports/financial');
