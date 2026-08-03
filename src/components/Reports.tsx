@@ -1,7 +1,7 @@
 import { useState, useEffect, type ReactNode } from 'react'
 import { Download, Users, Home, Wrench, CreditCard, TrendingUp, Loader2, AlertCircle, RefreshCcw, ChevronDown, BarChart3, PieChart, CheckCircle2, Clock, AlertTriangle, User } from 'lucide-react'
 import * as XLSX from 'xlsx'
-import { api, type TenantModel, type HouseModel, type PaymentModel, type MaintenanceModel } from '../services/api'
+import { api, type TenantModel, type HouseModel, type PaymentModel, type MaintenanceModel, type RentReportItem } from '../services/api'
 import CurrencySymbol, { CURRENCY_HTML } from './CurrencySymbol'
 
 interface ReportsProps {
@@ -58,6 +58,7 @@ function Reports({ language }: ReportsProps) {
   const [houses, setHouses] = useState<HouseModel[]>([])
   const [payments, setPayments] = useState<PaymentModel[]>([])
   const [maintenanceReqs, setMaintenanceReqs] = useState<MaintenanceModel[]>([])
+  const [rentReport, setRentReport] = useState<RentReportItem[]>([])
 
   const now = new Date()
   const [selMonth, setSelMonth] = useState(now.getMonth() + 1)
@@ -83,7 +84,7 @@ function Reports({ language }: ReportsProps) {
     setLoading(true)
     setError(null)
     try {
-      const [financial, maintenance, dashboard, tenR, houseR, payR, maintR] = await Promise.allSettled([
+      const [financial, maintenance, dashboard, tenR, houseR, payR, maintR, rentR] = await Promise.allSettled([
         api.getFinancialReport(),
         api.getMaintenanceReport(),
         api.getDashboardStats(),
@@ -91,6 +92,7 @@ function Reports({ language }: ReportsProps) {
         api.getVillas(),
         api.getPayments(),
         api.getMaintenance(),
+        api.getRentReport(),
       ])
       const fin = financial.status === 'fulfilled' ? financial.value : null
       const maint = maintenance.status === 'fulfilled' ? maintenance.value : null
@@ -99,11 +101,13 @@ function Reports({ language }: ReportsProps) {
       const hse = houseR.status === 'fulfilled' ? houseR.value : null
       const pay = payR.status === 'fulfilled' ? payR.value : null
       const mnt = maintR.status === 'fulfilled' ? maintR.value : null
+      const rent = rentR.status === 'fulfilled' ? rentR.value : null
 
       if (ten) setTenants(Array.isArray(ten) ? ten : (ten as any)?.tenants ?? [])
       if (hse && Array.isArray(hse)) setHouses(hse)
       if (pay) setPayments(Array.isArray(pay) ? pay : (pay as any)?.payments ?? [])
       if (mnt) setMaintenanceReqs(Array.isArray(mnt) ? mnt : (mnt as any)?.maintenances ?? [])
+      if (rent && Array.isArray(rent)) setRentReport(rent)
 
       const mergedMaintenance = { ...stats.maintenance }
       if (maint) {
@@ -218,9 +222,25 @@ function Reports({ language }: ReportsProps) {
     return !expired || rentOf(t) > 0
   })
 
+  const reportNow = selMonth === now.getMonth() + 1 && selYear === now.getFullYear()
+  const findReport = (tenant: TenantModel): RentReportItem | undefined =>
+    rentReport.find(rep =>
+      (tenant.id && rep.tenantId && tenant.id === rep.tenantId) ||
+      (rep.tenantName && tenant.fullName === rep.tenantName) ||
+      (rep.unitNumber && tenant.houseNumber === rep.unitNumber)
+    )
+
   const classify = (tenant: TenantModel): PayRow => {
     const id = tenant.id
     const name = tenant.fullName
+    const reportRec = reportNow ? findReport(tenant) : undefined
+    if (reportRec) {
+      const paid = num(reportRec.paidAmount)
+      const remaining = num(reportRec.remainingAmount)
+      if (remaining <= 0) return { tenant, status: 'paid', paid: paid || num(reportRec.rentAmount), owed: 0 }
+      if (paid > 0) return { tenant, status: 'pending', paid, owed: remaining > 0 ? remaining : rentOf(tenant) }
+      return { tenant, status: 'none', paid: 0, owed: remaining > 0 ? remaining : rentOf(tenant) }
+    }
     const recs = monthPayments.filter(p =>
       (id && p.tenantId === id) || (name && p.tenantName && p.tenantName === name)
     )
@@ -268,6 +288,26 @@ function Reports({ language }: ReportsProps) {
       }))
     }
   })
+  rentReport.forEach(rep => {
+    const name = rep.tenantName
+    if (!name) return
+    const exists = paymentRows.some(r =>
+      (r.tenant.id && rep.tenantId && r.tenant.id === rep.tenantId) ||
+      (r.tenant.fullName && r.tenant.fullName === name)
+    )
+    if (exists) return
+    const known = tenants.find(tn => tn.fullName === name || (rep.unitNumber && tn.houseNumber === rep.unitNumber))
+    paymentRows.push(classify(known || {
+      id: rep.tenantId,
+      fullName: name,
+      phoneNumber: '',
+      houseNumber: rep.unitNumber || '',
+      email: '',
+      contractNumber: '',
+      contractEndDate: rep.contractEndDate || '',
+      monthlyRent: num(rep.rentAmount),
+    }))
+  })
 
   const groups = {
     paid: paymentRows.filter(r => r.status === 'paid'),
@@ -276,8 +316,8 @@ function Reports({ language }: ReportsProps) {
     pending: paymentRows.filter(r => r.status === 'pending'),
     none: paymentRows.filter(r => r.status === 'none'),
   }
-  const collected = groups.paid.reduce((s, r) => s + r.paid, 0)
-  const outstanding = [...groups.late, ...groups.deferred, ...groups.pending, ...groups.none].reduce((s, r) => s + r.owed, 0)
+  const collected = paymentRows.reduce((s, r) => s + r.paid, 0)
+  const outstanding = paymentRows.reduce((s, r) => s + r.owed, 0)
   const expected = collected + outstanding
   const collectionRate = expected > 0 ? Math.round((collected / expected) * 100) : 0
 

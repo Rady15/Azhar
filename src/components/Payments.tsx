@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, X, User, Home, Send, LayoutList, Grid3X3, DollarSign, Tag, FileText, Calendar, Building2, Phone, Mail, CheckCircle, XCircle } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, X, User, Home, Send, LayoutList, Grid3X3, DollarSign, Tag, FileText, Calendar, Building2, Phone, Mail, CheckCircle, XCircle, BellRing, RefreshCcw, AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
 import { api, TenantModel } from '../services/api'
+import { buildAdminAlerts, type AdminAlert } from '../services/alerts'
 import CurrencySymbol from './CurrencySymbol'
 import { useToast } from './Toast'
 
@@ -99,6 +100,8 @@ function Payments({ language }: PaymentsProps) {
   const [, setLoading] = useState(false)
   const [, setError] = useState('')
   const [activeSection, setActiveSection] = useState<'payments' | 'expenses' | 'companies'>('payments')
+  const [alerts, setAlerts] = useState<AdminAlert[]>([])
+  const [alertsLoading, setAlertsLoading] = useState(false)
 
   // Payment modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false)
@@ -237,6 +240,32 @@ function Payments({ language }: PaymentsProps) {
       fetchCompanies()
     })
   }, [])
+
+  const fetchAlerts = async () => {
+    setAlertsLoading(true)
+    try {
+      const list = await buildAdminAlerts(language)
+      setAlerts(list)
+    } catch {
+      setAlerts([])
+    } finally {
+      setAlertsLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchAlerts() }, [language])
+
+  const alertStyle = (a: AdminAlert) => {
+    switch (a.severity) {
+      case 'danger': return { wrap: 'bg-red-50 border-red-200', icon: 'bg-red-100 text-red-600', badge: 'bg-red-600' }
+      case 'warning': return { wrap: 'bg-amber-50 border-amber-200', icon: 'bg-amber-100 text-amber-600', badge: 'bg-amber-500' }
+      default: return { wrap: 'bg-emerald-50 border-emerald-200', icon: 'bg-emerald-100 text-emerald-600', badge: 'bg-emerald-500' }
+    }
+  }
+  const alertIcon = (a: AdminAlert) =>
+    a.severity === 'danger' ? <AlertTriangle className="w-4 h-4" />
+    : a.severity === 'warning' ? <Clock className="w-4 h-4" />
+    : <CheckCircle2 className="w-4 h-4" />
 
   // Payment CRUD
   const handleAddPayment = () => {
@@ -635,6 +664,47 @@ function Payments({ language }: PaymentsProps) {
           <div className="p-4 bg-indigo-50 rounded-xl"><p className="text-sm text-indigo-600">{t('إجمالي العقود', 'Total Contracts')}</p><p className="text-xl font-bold text-indigo-700">{companyTotalContracts.toLocaleString()} <CurrencySymbol /></p></div>
           <div className="p-4 bg-green-50 rounded-xl"><p className="text-sm text-green-600">{t('المدفوع للشركات', 'Paid')}</p><p className="text-xl font-bold text-green-700">{companyTotalPaid.toLocaleString()} <CurrencySymbol /></p></div>
           <div className="p-4 bg-amber-50 rounded-xl"><p className="text-sm text-amber-600">{t('المتبقي', 'Remaining')}</p><p className="text-xl font-bold text-amber-700">{companyTotalRemaining.toLocaleString()} <CurrencySymbol /></p></div>
+        </div>
+      )}
+
+      {/* Admin Alerts */}
+      {activeSection === 'payments' && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+              <BellRing className="w-4 h-4 text-primary-600" />
+              {t('تنبيهات المدفوعات والعقود', 'Payment & Contract Alerts')}
+              <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded-full text-xs">{alerts.length}</span>
+            </h3>
+            <button onClick={fetchAlerts} className="flex items-center gap-1 text-xs text-slate-400 hover:text-primary-600 transition-colors" disabled={alertsLoading}>
+              <RefreshCcw className={`w-3.5 h-3.5 ${alertsLoading ? 'animate-spin' : ''}`} />
+              {t('تحديث', 'Refresh')}
+            </button>
+          </div>
+          {alerts.length === 0 ? (
+            <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm text-slate-500">
+              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+              {t('لا توجد تنبيهات — كل الإيجارات مسددة والعقود سارية', 'No alerts — all rents settled and contracts active')}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {alerts.map(a => {
+                const s = alertStyle(a)
+                return (
+                  <div key={a.id} className={`flex items-start gap-3 px-4 py-3 border rounded-xl ${s.wrap}`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${s.icon}`}>{alertIcon(a)}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-800">{a.title}</p>
+                        <span className={`text-[10px] text-white px-1.5 py-0.5 rounded-full ${s.badge}`}>{a.time}</span>
+                      </div>
+                      <p className="text-xs text-slate-600 mt-0.5">{a.message}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 

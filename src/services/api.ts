@@ -299,6 +299,19 @@ export interface LoginResponse {
   displayName?: string;
 }
 
+export interface RentReportItem {
+  tenantId?: string;
+  tenantName?: string;
+  unitNumber?: string;
+  rentAmount?: number;
+  rentFrequency?: string;
+  contractEndDate?: string;
+  remainingDays?: number;
+  paidAmount?: number;
+  remainingAmount?: number;
+  status?: string;
+}
+
 export interface TenantModel {
   id?: string;
   fullName: string;
@@ -693,5 +706,9 @@ export const api = {
 
   async getMaintenanceReport(): Promise<MaintenanceReport> {
     return request<MaintenanceReport>('GET', '/api/Reports/maintenance');
+  },
+
+  async getRentReport(): Promise<RentReportItem[]> {
+    return request<RentReportItem[]>('GET', '/api/Reports');
   }
 };

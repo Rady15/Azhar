@@ -16,6 +16,7 @@ import Staff from './components/Staff'
 import StaffTasks from './components/StaffTasks'
 import Profile from './components/Profile'
 import { api } from './services/api'
+import { buildAdminAlerts } from './services/alerts'
 
 type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'staff' | 'my-tasks' | 'profile'
 
@@ -43,10 +44,19 @@ function App() {
     Promise.allSettled([
       api.getComplaints(),
       api.getMaintenance(),
-      api.getAnnouncements()
-    ]).then(([complaintsRes, maintenanceRes, announcementsRes]) => {
+      api.getAnnouncements(),
+      buildAdminAlerts(language)
+    ]).then(([complaintsRes, maintenanceRes, announcementsRes, alertsRes]) => {
       const items: Array<{ id: number; title: string; message: string; time: string; unread: boolean }> = []
       let added = false
+
+      if (alertsRes.status === 'fulfilled' && alertsRes.value.length) {
+        alertsRes.value.slice(0, 4).forEach((a) => {
+          const id = notifIdRef.current++
+          items.push({ id, title: a.title, message: a.message, time: a.time, unread: !prevIds.has(id) })
+          if (!prevIds.has(id)) added = true
+        })
+      }
 
       if (announcementsRes.status === 'fulfilled') {
         const list = Array.isArray(announcementsRes.value) ? announcementsRes.value : []
