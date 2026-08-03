@@ -190,8 +190,21 @@ function Reports({ language }: ReportsProps) {
   }
   const enrichedPayments = payments.map(enrichPayment)
 
+  const effMonth = (p: PaymentModel) => {
+    const m = num(p.month)
+    if (m >= 1 && m <= 12) return m
+    const d = p.paymentDate || p.createdAt
+    return d ? new Date(d).getMonth() + 1 : 0
+  }
+  const effYear = (p: PaymentModel) => {
+    const y = num(p.year)
+    if (y >= 2000) return y
+    const d = p.paymentDate || p.createdAt
+    return d ? new Date(d).getFullYear() : 0
+  }
+
   const endOfMonth = new Date(selYear, selMonth, 0)
-  const monthPayments = enrichedPayments.filter(p => num(p.month) === selMonth && num(p.year) === selYear)
+  const monthPayments = enrichedPayments.filter(p => effMonth(p) === selMonth && effYear(p) === selYear)
 
   const monthTenants = tenants.filter(t => {
     const expired = t.isActive === false || String((t as any).status || '').toLowerCase() === 'expired'
@@ -220,7 +233,7 @@ function Reports({ language }: ReportsProps) {
     const arrears = enrichedPayments.filter(p =>
       ((id && p.tenantId === id) || (name && p.tenantName === name)) &&
       statusOf(p) !== 'paid' &&
-      (num(p.year) < selYear || (num(p.year) === selYear && num(p.month) < selMonth))
+      (effYear(p) < selYear || (effYear(p) === selYear && effMonth(p) < selMonth))
     )
     if (arrears.length) {
       return { tenant, status: 'late', paid: 0, owed: arrears.reduce((s, p) => s + num(p.amount), 0) }

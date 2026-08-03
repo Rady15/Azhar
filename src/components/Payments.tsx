@@ -240,8 +240,9 @@ function Payments({ language }: PaymentsProps) {
 
   // Payment CRUD
   const handleAddPayment = () => {
+    const today = new Date()
     setEditingPayment(null)
-    setPaymentFormData({ tenantId: '', tenantName: '', villaNumber: '', amount: 0, month: '', year: 2026, status: 'pending', paymentMethod: 'cash' })
+    setPaymentFormData({ tenantId: '', tenantName: '', villaNumber: '', amount: 0, month: today.getMonth() + 1, year: today.getFullYear(), status: 'pending', paymentMethod: 'cash' })
     setShowPaymentModal(true)
   }
 
