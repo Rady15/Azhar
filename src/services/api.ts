@@ -1,13 +1,122 @@
 // Production ASP.NET backend base URL
 export const API_BASE_URL = 'https://azhar.runasp.net';
 
-// Generic request helper with automatic Bearer Token injection and JSON parsing
+const TOKEN_KEY = 'azhar_token';
+const REFRESH_TOKEN_KEY = 'azhar_refresh_token';
+
+let unauthorizedHandler: (() => void) | null = null;
+let refreshPromise: Promise<string | null> | null = null;
+
+export function setUnauthorizedHandler(fn: (() => void) | null) {
+  unauthorizedHandler = fn;
+}
+
+function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+function setTokens(token: string, refreshToken?: string) {
+  localStorage.setItem(TOKEN_KEY, token);
+  if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+}
+
+function clearTokens() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
+function getTokenExpiry(token: string): number | null {
+  try {
+    const part = token.split('.')[1];
+    if (!part) return null;
+    const json = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof json.exp === 'number' ? json.exp : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function refreshAccessToken(): Promise<string | null> {
+  const token = getToken() || '';
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+  if (!refreshToken) return null;
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/Account/refresh-token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessToken: token, refreshToken }),
+        });
+        if (!res.ok) {
+          clearTokens();
+          return null;
+        }
+        const data = await res.json();
+        if (data && data.token) {
+          setTokens(data.token, data.refreshToken);
+          return data.token;
+        }
+        return null;
+      } catch {
+        return null;
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+  }
+  return refreshPromise;
+}
+
+export async function refreshIfExpiring(thresholdSec = 120): Promise<void> {
+  const token = getToken();
+  if (!token) return;
+  const exp = getTokenExpiry(token);
+  if (!exp) return;
+  if (exp - Date.now() / 1000 <= thresholdSec) {
+    await refreshAccessToken();
+  }
+}
+
+export async function restoreSession(): Promise<boolean> {
+  const token = getToken();
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+  if (!token && !refreshToken) return false;
+  if (token && !refreshToken) {
+    const exp = getTokenExpiry(token);
+    return exp ? exp * 1000 > Date.now() : false;
+  }
+  if (token) {
+    const exp = getTokenExpiry(token);
+    if (exp && exp * 1000 > Date.now()) return true;
+  }
+  const newToken = await refreshAccessToken();
+  return !!newToken;
+}
+
+async function fetchWithAuth(url: string, init: RequestInit): Promise<Response> {
+  let response = await fetch(url, init);
+  if (response.status === 401 && localStorage.getItem(REFRESH_TOKEN_KEY)) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      const headers = new Headers(init.headers);
+      headers.set('Authorization', `Bearer ${newToken}`);
+      response = await fetch(url, { ...init, headers });
+    } else if (!localStorage.getItem(REFRESH_TOKEN_KEY)) {
+      unauthorizedHandler?.();
+      throw new Error('SESSION_EXPIRED');
+    }
+  }
+  return response;
+}
+
+// Generic request helper with automatic Bearer Token injection, JSON parsing and token refresh on 401
 async function request<T>(method: string, path: string, body?: any): Promise<T> {
-  const token = localStorage.getItem('azhar_token');
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  
+
+  const token = getToken();
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -40,8 +149,8 @@ async function request<T>(method: string, path: string, body?: any): Promise<T> 
     }
   }
 
-  const response = await fetch(`${API_BASE_URL}${finalPath}`, options);
-  
+  const response = await fetchWithAuth(`${API_BASE_URL}${finalPath}`, options);
+
   if (!response.ok) {
     const errorText = await response.text();
     let errorMessage = `HTTP Error ${response.status}`;
@@ -69,7 +178,7 @@ async function request<T>(method: string, path: string, body?: any): Promise<T> 
 
 // Form-data request helper for endpoints that require multipart (e.g. House endpoints)
 async function formDataRequest<T>(method: string, path: string, data: Record<string, any>): Promise<T> {
-  const token = localStorage.getItem('azhar_token');
+  const token = getToken();
   const headers: Record<string, string> = {};
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -102,7 +211,7 @@ async function formDataRequest<T>(method: string, path: string, data: Record<str
     body: formData,
   };
 
-  const response = await fetch(`${API_BASE_URL}${path}`, options);
+  const response = await fetchWithAuth(`${API_BASE_URL}${path}`, options);
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -294,9 +403,11 @@ export interface FinancialReport {
 
 export interface LoginResponse {
   token: string;
+  refreshToken?: string;
   email?: string;
   fullName?: string;
   displayName?: string;
+  role?: string;
 }
 
 export interface RentReportItem {
@@ -435,19 +546,19 @@ export const api = {
   async loginAdmin(credentials: { email: string; password?: string }): Promise<LoginResponse> {
     const data = await request<LoginResponse>('POST', '/api/Account/login', credentials);
     if (data && data.token) {
-      localStorage.setItem('azhar_token', data.token);
+      setTokens(data.token, data.refreshToken);
       localStorage.setItem('azhar_email', credentials.email);
     }
     return data;
   },
 
   logout() {
-    localStorage.removeItem('azhar_token');
+    clearTokens();
     localStorage.removeItem('azhar_email');
   },
 
   isAuthenticated(): boolean {
-    return !!localStorage.getItem('azhar_token');
+    return !!getToken();
   },
 
   // Tenants API

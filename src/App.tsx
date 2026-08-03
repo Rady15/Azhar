@@ -15,7 +15,7 @@ import Facilities from './components/Facilities'
 import Staff from './components/Staff'
 import StaffTasks from './components/StaffTasks'
 import Profile from './components/Profile'
-import { api } from './services/api'
+import { api, restoreSession, refreshIfExpiring, setUnauthorizedHandler } from './services/api'
 import { buildAdminAlerts } from './services/alerts'
 
 type TabType = 'dashboard' | 'tenants' | 'villas' | 'maintenance' | 'complaints' | 'payments' | 'ads' | 'reports' | 'facilities' | 'bookings' | 'staff' | 'my-tasks' | 'profile'
@@ -24,6 +24,7 @@ const ALL_TABS: TabType[] = ['dashboard', 'tenants', 'villas', 'maintenance', 'c
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [authChecking, setAuthChecking] = useState(true)
   const [activeTab, setActiveTab] = useState<TabType>('dashboard')
   const [language, setLanguage] = useState<'AR' | 'EN'>('EN')
   const [showNotifications, setShowNotifications] = useState(false)
@@ -129,9 +130,41 @@ function App() {
   }, [isLoggedIn])
 
   const handleLogout = () => {
+    api.logout()
     setIsLoggedIn(false)
     setActiveTab('dashboard')
   }
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      api.logout()
+      setIsLoggedIn(false)
+      setAuthChecking(false)
+    })
+    restoreSession().then(ok => {
+      if (ok) {
+        const stored = localStorage.getItem('azhar_permissions')
+        if (stored) {
+          try {
+            const perms: string[] = JSON.parse(stored)
+            setUserPermissions(perms)
+            if (perms.length === 1 && perms[0] === 'my-tasks') setActiveTab('my-tasks')
+          } catch { setUserPermissions(ALL_TABS) }
+        }
+        setUserName(localStorage.getItem('azhar_name') || localStorage.getItem('azhar_email') || 'Admin')
+        setIsLoggedIn(true)
+      } else {
+        api.logout()
+      }
+      setAuthChecking(false)
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!isLoggedIn) return
+    const interval = setInterval(() => { refreshIfExpiring() }, 60000)
+    return () => clearInterval(interval)
+  }, [isLoggedIn])
 
   const renderContent = () => {
     const hasAccess = (tab: TabType) => userPermissions.includes(tab)
@@ -171,6 +204,17 @@ function App() {
       default:
         return null
     }
+  }
+
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-slate-200 border-t-primary-600 rounded-full animate-spin"></div>
+          <p className="text-sm text-slate-400">{language === 'AR' ? 'جارٍ التحقق من الجلسة...' : 'Checking session...'}</p>
+        </div>
+      </div>
+    )
   }
 
   if (!isLoggedIn) {

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { Search, Bell, Globe, ChevronDown, LogOut, Users, Home, Wrench, AlertCircle, CreditCard, Mail, FileBarChart, CalendarCheck, Building2, Briefcase, Menu, UserRound } from 'lucide-react'
 
 interface Notification {
@@ -37,6 +37,18 @@ interface SearchResult {
 function Header({ language, setLanguage, notifications, showNotifications, setShowNotifications, onLogout, searchQuery, setSearchQuery, setActiveTab, userName, permissions, hasNewNotification, onMarkRead, sidebarOpen, setSidebarOpen }: HeaderProps) {
   const unreadCount = notifications.filter(n => n.unread).length
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const bellRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!showNotifications) return
+    const onDown = (e: MouseEvent) => {
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+        setShowNotifications(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [showNotifications, setShowNotifications])
 
   const allResults: SearchResult[] = useMemo(() => [
     { id: 'tenants', label: language === 'AR' ? 'المستأجرين' : 'Tenants', icon: Users, category: language === 'AR' ? 'أقسام' : 'Sections' },
@@ -133,7 +145,7 @@ function Header({ language, setLanguage, notifications, showNotifications, setSh
           <ChevronDown className="w-3 h-3" />
         </button>
 
-        <div className="relative">
+        <div className="relative" ref={bellRef}>
           <button 
             onClick={() => { setShowNotifications(!showNotifications); if (!showNotifications && onMarkRead) onMarkRead() }}
             className="relative p-2 text-slate-500 hover:bg-slate-50 rounded-lg transition-colors group"
@@ -147,7 +159,7 @@ function Header({ language, setLanguage, notifications, showNotifications, setSh
           </button>
 
           {showNotifications && (
-            <div className="absolute left-0 lg:left-auto lg:right-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
+            <div className="absolute left-0 top-full mt-2 w-72 sm:w-80 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
               <div className="p-3 border-b border-slate-100 flex items-center justify-between">
                 <h3 className="font-semibold text-slate-800">{language === 'AR' ? 'الإشعارات' : 'Notifications'}</h3>
                 {unreadCount > 0 && (
