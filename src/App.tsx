@@ -187,10 +187,10 @@ function App() {
         setSidebarOpen={setSidebarOpen}
       />
 
-      <div className="flex">
+      <div className="flex w-full">
           <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} language={language} userName={userName} permissions={userPermissions} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-          <main className={`flex-1 ${language === 'AR' ? 'mr-0 md:mr-72' : 'ml-0 md:ml-72'} p-4 md:p-6 pt-20 md:pt-24`}>
+          <main className={`flex-1 min-w-0 max-w-full ${language === 'AR' ? 'mr-0 lg:mr-72' : 'ml-0 lg:ml-72'} p-4 md:p-6 pt-20 md:pt-24`}>
             {renderContent()}
           </main>
         </div>

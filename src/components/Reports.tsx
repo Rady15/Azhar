@@ -169,7 +169,9 @@ function Reports({ language }: ReportsProps) {
     const n = Number(v)
     return Number.isFinite(n) ? n : 0
   }
-  const money = (n: number, withCur = true) => n ? `${n.toLocaleString()}${withCur ? ` ${currency}` : ''}` : '—'
+  const money = (n: number, withCur = true) => n ? (
+    <span className="inline-flex items-center gap-0.5 whitespace-nowrap">{n.toLocaleString()}{withCur ? <CurrencySymbol className="h-[1em] w-[0.9em] inline-block" /> : null}</span>
+  ) : '—'
   const dateFmt = (d?: string) => d ? new Date(d).toLocaleDateString(ar ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
   const statusOf = (p: PaymentModel) => String(p.status || '').toLowerCase()
 
@@ -696,12 +698,12 @@ function Reports({ language }: ReportsProps) {
     )
 
     const Card = ({ label, value, color, icon }: { label: string; value: string | ReactNode; color: string; icon?: ReactNode }) => (
-      <div className="rounded-xl p-5 border transition-all hover:shadow-md" style={{ background: `${color}08`, borderColor: `${color}25` }}>
+      <div className="rounded-xl p-5 border transition-all hover:shadow-md min-w-0" style={{ background: `${color}08`, borderColor: `${color}25` }}>
         <div className="flex items-center gap-2 mb-2">
           {icon}
-          <span className="text-xs font-semibold uppercase tracking-wide" style={{ color }}>{label}</span>
+          <span className="text-xs font-semibold uppercase tracking-wide truncate" style={{ color }}>{label}</span>
         </div>
-        <p className="text-3xl font-extrabold" style={{ color }}>{value}</p>
+        <p className="text-xl sm:text-2xl lg:text-3xl font-extrabold break-words leading-tight" style={{ color }}>{value}</p>
       </div>
     )
 
@@ -785,14 +787,14 @@ function Reports({ language }: ReportsProps) {
       const avlPct = Math.max(100 - occPct, 0)
       return (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             <Card label={t('إجمالي الفلل', 'Total')} value={String(villaTotal)} color="#3b82f6" icon={<Home className="w-4 h-4" />} />
             <Card label={t('مؤجرة', 'Occupied')} value={String(occCount || stats.villas.occupied)} color="#a855f7" />
             <Card label={t('متاحة', 'Available')} value={String(Math.max(villaTotal - occCount, 0) || stats.villas.available)} color="#22c55e" />
             <Card label={t('صيانة', 'Maintenance')} value={String(mntCount)} color="#f59e0b" />
           </div>
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-            <div className="flex items-center gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
               <Donut pct={occPct} color="#a855f7" label={t('نسبة الإشغال', 'Occupancy')} sub={`${occPct}% ${t('مشغولة', 'occupied')}`} />
               <div className="flex-1">
                 <Bar label={t('مؤجرة', 'Occupied')} pct={occPct} color="#a855f7" />
@@ -830,7 +832,7 @@ function Reports({ language }: ReportsProps) {
       const donePct = stats.maintenance.total ? Math.round((stats.maintenance.completed / stats.maintenance.total) * 100) : 0
       return (
         <div className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             <Card label={t('الإجمالي', 'Total')} value={String(stats.maintenance.total)} color="#475569" icon={<Wrench className="w-4 h-4" />} />
             <Card label={t('قيد الانتظار', 'Pending')} value={String(stats.maintenance.pending)} color="#f59e0b" />
             <Card label={t('قيد العمل', 'In Progress')} value={String(stats.maintenance.inProgress)} color="#3b82f6" />
@@ -869,7 +871,7 @@ function Reports({ language }: ReportsProps) {
                 m.houseNumber || m.villaNumber || '—',
                 m.tenantName || '—',
                 <MaintBadge key="sb" status={m.status} />,
-                num(m.cost) ? <span key="c" className="font-bold">{num(m.cost).toLocaleString()} {currency}</span> : '—',
+                num(m.cost) ? <span key="c" className="font-bold">{num(m.cost).toLocaleString()} <CurrencySymbol /></span> : '—',
                 <span key="dt" className="text-xs">{dateFmt(m.createdAt)}</span>,
               ])}
               empty={t('لا توجد طلبات صيانة', 'No maintenance requests')}
@@ -898,7 +900,7 @@ function Reports({ language }: ReportsProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             <Card label={t('المتوقع تحصيله', 'Expected')} value={<>{expected.toLocaleString()} <CurrencySymbol /></>} color="#3b82f6" icon={<CreditCard className="w-4 h-4" />} />
             <Card label={t('محصل', 'Collected')} value={<>{collected.toLocaleString()} <CurrencySymbol /></>} color="#22c55e" icon={<CheckCircle2 className="w-4 h-4" />} />
             <Card label={t('متبقٍ', 'Outstanding')} value={<>{outstanding.toLocaleString()} <CurrencySymbol /></>} color="#ef4444" icon={<AlertTriangle className="w-4 h-4" />} />
@@ -906,7 +908,7 @@ function Reports({ language }: ReportsProps) {
           </div>
 
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-            <div className="flex items-center gap-6 flex-wrap">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6 flex-wrap">
               <Donut pct={collectionRate} color="#22c55e" label={t('نسبة التحصيل', 'Collection Rate')} sub={`${collectionRate}% ${t('محصلة', 'collected')}`} />
               <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Bar label={t('محصل', 'Collected')} pct={collectionRate} color="#22c55e" />
@@ -931,7 +933,7 @@ function Reports({ language }: ReportsProps) {
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
               <h3 className="text-sm font-bold text-slate-800">{t('دفتر التحصيل الكامل', 'Full collection ledger')} — {monthName(selMonth)} {selYear}</h3>
             </div>
             <Table
@@ -957,14 +959,14 @@ function Reports({ language }: ReportsProps) {
     const pct = tenants.length ? Math.round((activeCount / tenants.length) * 100) : (stats.tenants.total ? Math.round((stats.tenants.active / stats.tenants.total) * 100) : 0)
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           <Card label={t('إجمالي المستأجرين', 'Total Tenants')} value={String(tenants.length || stats.tenants.total)} color="#3b82f6" icon={<Users className="w-4 h-4" />} />
           <Card label={t('نشط', 'Active')} value={String(activeCount || stats.tenants.active)} color="#22c55e" />
           <Card label={t('ينتهي خلال 60 يوم', 'Expiring in 60d')} value={String(expiringSoon)} color="#f59e0b" icon={<Clock className="w-4 h-4" />} />
           <Card label={t('غير نشط / منتهي', 'Inactive / Expired')} value={String(expiredCount || stats.tenants.inactive)} color="#94a3b8" />
         </div>
         <div className="bg-slate-50 border border-slate-200 rounded-xl p-6">
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             <Donut pct={pct} color="#22c55e" label={t('نسبة النشاط', 'Activity Rate')} sub={`${pct}% ${t('نشط', 'active')}`} />
             <div className="flex-1">
               <Bar label={t('نشط', 'Active')} pct={pct} color="#22c55e" />
@@ -973,7 +975,7 @@ function Reports({ language }: ReportsProps) {
           </div>
         </div>
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <h3 className="text-sm font-bold text-slate-800">{t('تفاصيل المستأجرين وحالة الدفع', 'Tenant details & payment status')}</h3>
             <span className="text-xs text-slate-400">{monthName(selMonth)} {selYear}</span>
           </div>
@@ -1014,7 +1016,7 @@ function Reports({ language }: ReportsProps) {
 
   return (
     <div className="bg-white rounded-2xl p-6" onClick={() => showFormatMenu && setShowFormatMenu(false)}>
-      <div className="flex justify-between items-center mb-5">
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
             <PieChart className="w-5 h-5 text-primary-600" />
