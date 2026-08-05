@@ -227,6 +227,10 @@ function Tenants({ language }: TenantsProps) {
 
   const handleSave = async () => {
     try {
+      if (!formData.monthlyRent || Number(formData.monthlyRent) <= 0 || !formData.annualRent || Number(formData.annualRent) <= 0) {
+        showToast('error', language === 'AR' ? 'يجب إدخال الإيجار الشهري والسنوي' : 'Monthly and annual rent are required')
+        return
+      }
       if (editingTenant) {
         const merged = { ...editingTenant as Tenant, ...formData }
         const updatePayload = mapToBackend(merged)
@@ -435,12 +439,12 @@ function Tenants({ language }: TenantsProps) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('الإيجار الشهري', 'Monthly Rent')}</label>
-                  <input type="number" value={formData.monthlyRent || ''} onChange={e => setFormData({ ...formData, monthlyRent: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('الإيجار الشهري', 'Monthly Rent')} *</label>
+                  <input type="number" required value={formData.monthlyRent || ''} onChange={e => setFormData({ ...formData, monthlyRent: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('الإيجار السنوي', 'Annual Rent')}</label>
-                  <input type="number" value={formData.annualRent || ''} onChange={e => setFormData({ ...formData, annualRent: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('الإيجار السنوي', 'Annual Rent')} *</label>
+                  <input type="number" required value={formData.annualRent || ''} onChange={e => setFormData({ ...formData, annualRent: Number(e.target.value) })} className="w-full h-10 px-3 border border-slate-200 rounded-xl text-sm" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

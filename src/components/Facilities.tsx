@@ -107,7 +107,16 @@ export default function Facilities({ language }: FacilitiesProps) {
   }
 
   const openEdit = (_facility: EnrichedFacility) => {
-    showToast('warning', language === 'AR' ? 'تعديل المرفق غير مدعوم حالياً' : 'Facility editing is not supported by the server yet')
+    setEditingFacility(_facility)
+    setFormData({
+      name: _facility.name || '',
+      description: _facility.description || '',
+      maxCapacity: _facility.maxCapacity || 15,
+      isAvailable: _facility.isAvailable ?? true,
+    })
+    setImageFile(null)
+    setImagePreview(_facility.image ? resolveImage(_facility.image) : '')
+    setShowModal(true)
   }
 
   const handleView = (facility: EnrichedFacility) => {
